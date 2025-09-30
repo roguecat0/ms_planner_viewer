@@ -14,5 +14,6 @@ fn main() -> anyhow::Result<()> {
     };
     dbg!(&plan);
     dbg!(&config);
+    println!("url: {}", plan.tasks[0].to_url(&plan.id));
     Ok(())
 }

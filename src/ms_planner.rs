@@ -110,6 +110,12 @@ impl Task {
             description,
         })
     }
+    pub fn to_url(&self, plan_id: &str) -> String {
+        format!(
+            "https://planner.cloud.microsoft/webui/plan/{plan_id}/view/grid/task/{}",
+            self.id
+        )
+    }
 }
 fn to_usizes(slice: &str) -> Option<(usize, usize)> {
     if slice.is_empty() {
