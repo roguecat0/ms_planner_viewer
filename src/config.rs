@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 type AnyResult<T> = anyhow::Result<T>;
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct Config {
-    filter: TaskFilter,
-    sort: TaskSort,
+    pub filter: TaskFilter,
+    pub sort: TaskSort,
 }
 impl Config {
     pub fn from_file(path: impl AsRef<Path>) -> AnyResult<Self> {
@@ -21,23 +21,32 @@ impl Config {
 }
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct TaskFilter {
-    name: String,
-    bucket: TagFilter,
-    progress: TagFilter,
-    priority: TagFilter,
-    assigned_to: TagFilter,
-    created_by: TagFilter,
+    pub name: String,
+    pub bucket: TagFilter,
+    pub progress: TagFilter,
+    pub priority: TagFilter,
+    pub labels: MultiTagFilter,
+    pub assigned_to: MultiTagFilter,
+    pub created_by: TagFilter,
+    pub description: String,
 }
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+pub struct MultiTagFilter {
+    pub and: Vec<String>,
+    pub or: Vec<String>,
+    pub not: Vec<String>,
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct TagFilter {
-    and: Vec<String>,
-    or: Vec<String>,
-    not: Vec<String>,
+    pub or: Vec<String>,
+    pub not: Vec<String>,
 }
+
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct TaskSort {
-    column: SortColumn,
-    order: Order,
+    pub column: SortColumn,
+    pub order: Order,
 }
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub enum Order {
@@ -55,6 +64,48 @@ pub enum SortColumn {
     StartDate,
     Deadline,
     CompleteDate,
+}
+impl TagFilter {
+    pub fn filter(&self, tag: &String) -> bool {
+        if !self.not.is_empty() {
+            if self.not.contains(tag) {
+                return false;
+            }
+        }
+        if !self.or.is_empty() {
+            if !self.or.contains(tag) {
+                return false;
+            }
+        }
+        true
+    }
+}
+impl MultiTagFilter {
+    pub fn filter(&self, tags: &[String]) -> bool {
+        if !self.not.is_empty() {
+            if self.not.iter().any(|f| tags.contains(f)) {
+                return false;
+            }
+        }
+        if !self.or.is_empty() {
+            if !self.or.iter().any(|f| tags.contains(f)) {
+                return false;
+            }
+        }
+        if !self.and.is_empty() {
+            if !self.and.iter().all(|f| tags.contains(f)) {
+                return false;
+            }
+        }
+        true
+    }
+}
+pub fn no_case_contains(pattern: &str, text: &str) -> bool {
+    if !pattern.is_empty() {
+        text.to_lowercase().contains(&pattern.to_lowercase())
+    } else {
+        true
+    }
 }
 
 // id,

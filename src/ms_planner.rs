@@ -55,7 +55,6 @@ pub struct Task {
 
 impl Task {
     pub fn parse(data: &[Data]) -> AnyResult<Self> {
-        dbg!(&data);
         let str_data: Result<Vec<String>, usize> = data
             .iter()
             .enumerate()
@@ -65,10 +64,6 @@ impl Task {
                     .ok_or(i)
             })
             .collect();
-        data.iter()
-            .enumerate()
-            .inspect(|a| println!("{a:?}"))
-            .count();
         let str_data: Vec<String> =
             str_data.map_err(|i| anyhow::anyhow!("{:?} is not string", data[i]))?;
         let id = str_data[0].clone();
@@ -154,12 +149,10 @@ pub fn get_plan(path: impl AsRef<Path>) -> AnyResult<Plan> {
     let mut tasks: Vec<Task> = Vec::new();
     for (i, data) in range.rows().enumerate() {
         if i == 0 {
-            data.iter()
-                .enumerate()
-                .inspect(|a| print!("{a:?}, "))
-                .count();
-            println!();
             continue;
+        }
+        if i > 2 {
+            break;
         }
         tasks.push(Task::parse(data)?);
     }
