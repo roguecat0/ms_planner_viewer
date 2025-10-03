@@ -1,6 +1,8 @@
 const PLAN_PATH: &str = "./resources/plan.xlsx";
 const CONFIG_PATH: &str = "./resources/config.toml";
 
+mod app;
+
 use ms_planner_viewer::{
     config::{self, Config},
     ms_planner,
