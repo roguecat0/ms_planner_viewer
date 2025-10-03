@@ -1,6 +1,8 @@
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
+
+use crate::ms_planner::{Priority, Progress};
 type AnyResult<T> = anyhow::Result<T>;
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct Config {
@@ -22,12 +24,12 @@ impl Config {
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct TaskFilter {
     pub name: String,
-    pub bucket: TagFilter,
-    pub progress: TagFilter,
-    pub priority: TagFilter,
+    pub bucket: TagFilter<String>,
+    pub progress: TagFilter<Progress>,
+    pub priority: TagFilter<Priority>,
     pub labels: MultiTagFilter,
     pub assigned_to: MultiTagFilter,
-    pub created_by: TagFilter,
+    pub created_by: TagFilter<String>,
     pub description: String,
 }
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
@@ -38,9 +40,9 @@ pub struct MultiTagFilter {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
-pub struct TagFilter {
-    pub or: Vec<String>,
-    pub not: Vec<String>,
+pub struct TagFilter<T> {
+    pub or: Vec<T>,
+    pub not: Vec<T>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
@@ -64,9 +66,10 @@ pub enum SortColumn {
     StartDate,
     Deadline,
     CompleteDate,
+    Progress,
 }
-impl TagFilter {
-    pub fn filter(&self, tag: &String) -> bool {
+impl<T: PartialEq> TagFilter<T> {
+    pub fn filter(&self, tag: &T) -> bool {
         if !self.not.is_empty() {
             if self.not.contains(tag) {
                 return false;

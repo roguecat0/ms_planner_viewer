@@ -1,7 +1,10 @@
 use calamine::{self, DataType, open_workbook_auto};
 use calamine::{Data, Reader};
 use chrono::NaiveDate;
+use serde::{Deserialize, Serialize};
 use std::path::Path;
+
+use crate::lang;
 
 const DATA_FMT: &str = "%d-%m-%Y";
 
@@ -13,20 +16,41 @@ pub struct Plan {
     pub tasks: Vec<Task>,
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Progress {
     #[default]
     NotStarted,
     Ongoing,
     Done,
 }
-#[derive(Default, Debug, Clone)]
+impl From<&str> for Progress {
+    fn from(value: &str) -> Self {
+        match value {
+            lang::nl::PROGRESS_NOT_STARTED => Self::NotStarted,
+            lang::nl::PROGRESS_ONGOING => Self::Ongoing,
+            lang::nl::PROGRESS_DONE => Self::Done,
+            _ => panic!("val: {value:?}"),
+        }
+    }
+}
+#[derive(Default, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Priority {
     Urgent,
     Important,
-    Medium,
+    Mid,
     #[default]
     Low,
+}
+impl From<&str> for Priority {
+    fn from(value: &str) -> Self {
+        match value {
+            lang::nl::PRIO_IMPORTANT => Self::Important,
+            lang::nl::PRIO_MID => Self::Mid,
+            lang::nl::PRIO_LOW => Self::Low,
+            lang::nl::PRIO_URGENT => Self::Urgent,
+            _ => panic!("val: {value:?}"),
+        }
+    }
 }
 
 type AnyResult<T> = anyhow::Result<T>;
@@ -36,8 +60,8 @@ pub struct Task {
     pub id: String,
     pub name: String,
     pub bucket: String,
-    pub progress: String,
-    pub priority: String,
+    pub progress: Progress,
+    pub priority: Priority,
     pub assigned_to: Vec<String>,
     pub created_by: String,
     pub create_date: NaiveDate,
@@ -69,8 +93,8 @@ impl Task {
         let id = str_data[0].clone();
         let name = str_data[1].clone();
         let bucket = str_data[2].clone();
-        let progress = str_data[3].clone();
-        let priority = str_data[4].clone();
+        let progress = str_data[3].as_str().into();
+        let priority = str_data[4].as_str().into();
         let assigned_to = to_string_list(&str_data[5]);
         let created_by = str_data[6].clone();
         let create_date = NaiveDate::parse_from_str(&str_data[7], DATA_FMT)?;
@@ -139,8 +163,8 @@ fn to_option_date(slice: &str) -> AnyResult<Option<NaiveDate>> {
 }
 pub fn get_plan(path: impl AsRef<Path>) -> AnyResult<Plan> {
     let mut workbook = open_workbook_auto(path).expect("lol");
-    let info = workbook.worksheet_range("Plannaam ").unwrap();
-    let range = workbook.worksheet_range("Taken").unwrap();
+    let info = workbook.worksheet_range(lang::nl::SHEET_INFO).unwrap();
+    let range = workbook.worksheet_range(lang::nl::SHEET_TASKS).unwrap();
     let mut info = info.rows();
     let name = info.next().unwrap()[1].as_string().unwrap();
     let id = info.next().unwrap()[1].as_string().unwrap();
@@ -151,12 +175,11 @@ pub fn get_plan(path: impl AsRef<Path>) -> AnyResult<Plan> {
         if i == 0 {
             continue;
         }
-        if i > 2 {
-            break;
-        }
+        // if i > 2 {
+        //     break;
+        // }
         tasks.push(Task::parse(data)?);
     }
-    dbg!(&tasks);
     Ok(Plan {
         id,
         name,
