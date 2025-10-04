@@ -1,7 +1,7 @@
 use ratatui::{
     Frame,
     crossterm::style::Color,
-    layout::{Constraint, Margin},
+    layout::{Constraint, Flex, Layout, Margin, Rect},
     style::{Modifier, Style, Stylize},
     text::Text,
     widgets::{Block, BorderType, Clear, Padding, Paragraph, Row, Table, Widget},
@@ -12,6 +12,7 @@ use crate::{
     ms_planner::{Priority, Progress, Task},
 };
 const HEADERS_LEN: usize = 5;
+const DATE_CONSTRAINT: Constraint = Constraint::Length(10);
 
 pub fn view(app: &mut App, f: &mut Frame) {
     render_table(app, f);
@@ -23,7 +24,7 @@ pub fn get_headers() -> [Text<'static>; HEADERS_LEN] {
         "Bucket".into(),
         "Pro".into(),
         "Pri".into(),
-        "hello".into(),
+        "Created".into(),
     ]
 }
 fn render_table(app: &mut App, f: &mut Frame) {
@@ -34,7 +35,7 @@ fn render_table(app: &mut App, f: &mut Frame) {
         Constraint::Length(15),
         Constraint::Length(3),
         Constraint::Length(3),
-        Constraint::Length(10),
+        DATE_CONSTRAINT,
     ];
 
     let table = Table::new(rows, cols)
@@ -56,7 +57,11 @@ fn task_to_row(task: &Task) -> Row {
 
 fn render_error_box(app: &mut App, f: &mut Frame) {
     if let Some(error) = &app.error_popup {
-        let area = f.area().inner(Margin::new(10, 10));
+        let area = center(
+            f.area(),
+            Constraint::Percentage(80),
+            Constraint::Percentage(70),
+        );
         f.render_widget(Clear, area.clone());
         f.render_widget(
             Paragraph::new(error.clone()).block(
@@ -69,6 +74,13 @@ fn render_error_box(app: &mut App, f: &mut Frame) {
         );
     }
 }
+fn center(area: Rect, horizontal: Constraint, vertical: Constraint) -> Rect {
+    let [area] = Layout::horizontal([horizontal])
+        .flex(Flex::Center)
+        .areas(area);
+    let [area] = Layout::vertical([vertical]).flex(Flex::Center).areas(area);
+    area
+}
 trait AsText {
     fn as_text(&self) -> Text {
         Text::from("lol")
@@ -77,17 +89,17 @@ trait AsText {
 impl AsText for Priority {
     fn as_text(&self) -> Text {
         match self {
-            Self::Low => Text::from("???").fg(Color::Blue),
-            Self::Mid => Text::from("|||"),
-            Self::Important => Text::from("!!!").fg(Color::Yellow),
-            Self::Urgent => Text::from("$$$").fg(Color::Red),
+            Self::Low => Text::from(" Ⅰ ").fg(Color::Blue),
+            Self::Mid => Text::from(" Ⅱ "),
+            Self::Important => Text::from(" Ⅲ ").fg(Color::Yellow),
+            Self::Urgent => Text::from(" Ⅳ ").fg(Color::Red),
         }
     }
 }
 impl AsText for Progress {
     fn as_text(&self) -> Text {
         match self {
-            Self::Done => Text::from("[v]"),
+            Self::Done => Text::from("[✓]"),
             Self::Ongoing => Text::from("[-]"),
             Self::NotStarted => Text::from("[ ]"),
         }

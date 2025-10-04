@@ -51,11 +51,19 @@ impl App {
         sort_tasks(&self.config, &mut filtered_tasks);
         // filtered_tasks = filtered_tasks.into_iter().take(3).collect();
         self.displayed_tasks = filtered_tasks;
-        self.error_popup = Some(format!(
+        self.add_error_msg(&format!(
             "all tasks{}\ntasks found: {}",
             self.plan.tasks.len(),
             self.displayed_tasks.len()
-        ))
+        ));
+    }
+    pub fn add_error_msg(&mut self, s: &str) {
+        let text = if let Some(text) = &self.error_popup {
+            text.to_owned() + "\n" + s
+        } else {
+            s.to_string()
+        };
+        self.error_popup = Some(text);
     }
 }
 
