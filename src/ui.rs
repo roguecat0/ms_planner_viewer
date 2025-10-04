@@ -34,7 +34,7 @@ pub fn get_headers() -> [Text<'static>; HEADERS_LEN] {
     ]
 }
 fn render_filter_list(app: &mut App, f: &mut Frame) {
-    let list = if let Some(ui_filter) = &app.filter_view.ui_tag_filter {
+    let list = if let Some((ui_filter, _)) = &app.filter_view.ui_tag_filter {
         let list = match ui_filter {
             UiTagFilter::Single(v) => List::new(v.iter().map(|u| u.as_text())),
             UiTagFilter::Multi(v) => List::new(v.iter().map(|u| u.as_text())),
@@ -132,20 +132,44 @@ impl AsText for Progress {
         }
     }
 }
+#[derive(Clone)]
 pub enum UiTagFilter {
     Multi(Vec<(String, MultiTagState)>),
     Single(Vec<(String, TagState)>),
 }
+#[derive(Clone)]
 pub enum TagState {
     Or,
     Nil,
     Not,
 }
+#[derive(Clone)]
 pub enum MultiTagState {
     Or,
     And,
     Nil,
     Not,
+}
+impl TagState {
+    pub fn next(&mut self) {
+        let next = match self {
+            Self::Nil => Self::Or,
+            Self::Or => Self::Not,
+            Self::Not => Self::Nil,
+        };
+        let _ = std::mem::replace(self, next);
+    }
+}
+impl MultiTagState {
+    pub fn next(&mut self) {
+        let next = match self {
+            Self::Nil => Self::Or,
+            Self::Or => Self::And,
+            Self::And => Self::Not,
+            Self::Not => Self::Nil,
+        };
+        let _ = std::mem::replace(self, next);
+    }
 }
 impl AsText for (String, MultiTagState) {
     fn as_text(&self) -> Text {
@@ -258,6 +282,7 @@ impl TryFrom<UiTagFilter> for MultiTagFilter {
         }
     }
 }
+#[derive(Clone)]
 pub enum UiColumn {
     Bucket,
     Progress,

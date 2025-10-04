@@ -1,3 +1,5 @@
+use std::ops::IndexMut;
+
 use ratatui::{
     DefaultTerminal,
     crossterm::event::{self, Event, KeyCode, KeyEvent},
@@ -23,7 +25,7 @@ pub struct App {
 pub struct FilterView {
     pub state: ListState,
     pub unique_task_keys: UniqueTaskKeys,
-    pub ui_tag_filter: Option<UiTagFilter>,
+    pub ui_tag_filter: Option<(UiTagFilter, UiColumn)>,
 }
 pub enum InputMode {
     TableRow,
@@ -72,6 +74,7 @@ impl App {
                     InputMode::TableRow => self.run_table_row_mode(key),
                     InputMode::FilterMode => self.run_filter_mode(key),
                 }?;
+                self.set_filterd_tasks();
             }
         }
         Ok(())
@@ -102,7 +105,30 @@ impl App {
             }
             KeyCode::Char(' ') => {
                 if let Some(i) = self.filter_view.state.selected() {
-                    if let None = self.filter_view.ui_tag_filter {
+                    if let Some((filter_tags, column)) = &mut self.filter_view.ui_tag_filter {
+                        match filter_tags {
+                            UiTagFilter::Single(v) => {
+                                let (_, state) = v.index_mut(i);
+                                state.next();
+                            }
+                            UiTagFilter::Multi(v) => {
+                                let (_, state) = v.index_mut(i);
+                                state.next();
+                            }
+                        }
+                        match column {
+                            UiColumn::Labels => {
+                                self.config.filter.labels = filter_tags.clone().try_into()?
+                            }
+                            UiColumn::Bucket => {
+                                self.config.filter.bucket = filter_tags.clone().try_into()?
+                            }
+                            UiColumn::AssignedTo => {
+                                self.config.filter.assigned_to = filter_tags.clone().try_into()?
+                            }
+                            _ => todo!(),
+                        };
+                    } else {
                         let column = &self.config.filter.get_ui_columns()[i];
                         let uniques = match column {
                             UiColumn::Labels => &self.filter_view.unique_task_keys.labels,
@@ -110,8 +136,10 @@ impl App {
                             UiColumn::AssignedTo => &self.filter_view.unique_task_keys.people,
                             _ => todo!(),
                         };
-                        self.filter_view.ui_tag_filter =
-                            Some(self.config.filter.get_ui_filter(column, uniques));
+                        self.filter_view.ui_tag_filter = Some((
+                            self.config.filter.get_ui_filter(column, uniques),
+                            column.clone(),
+                        ));
                         self.filter_view.state.select_first();
                     }
                 }

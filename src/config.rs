@@ -75,6 +75,9 @@ impl TaskFilter {
             C::AssignedTo,
         ]
     }
+    pub fn update_from_ui_filter(&mut self, column: &UiColumn, tf: &UiTagFilter) {
+        use UiColumn as C;
+    }
 }
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct MultiTagFilter {
