@@ -1,12 +1,12 @@
 use ratatui::{
     DefaultTerminal,
-    crossterm::event::{self, Event, KeyCode},
+    crossterm::event::{self, Event, KeyCode, KeyEvent},
     widgets::TableState,
 };
 
 use crate::{
     config::{self, Config},
-    ms_planner::{Plan, Priority, Task},
+    ms_planner::{Plan, Task},
     ui,
 };
 type AnyResult<T> = anyhow::Result<T>;
@@ -17,6 +17,10 @@ pub struct App {
     pub table_state: TableState,
     pub displayed_tasks: Vec<Task>,
     pub error_popup: Option<String>,
+    pub input_mode: InputMode,
+}
+pub enum InputMode {
+    TableRow,
 }
 
 impl App {
@@ -27,6 +31,7 @@ impl App {
             displayed_tasks: vec![],
             error_popup: None,
             table_state: TableState::new().with_selected(0),
+            input_mode: InputMode::TableRow,
         };
         app.set_filterd_tasks();
         app
@@ -35,14 +40,26 @@ impl App {
         loop {
             terminal.draw(|frame| ui::view(&mut self, frame))?;
             if let Event::Key(key) = event::read()? {
-                match key.code {
-                    KeyCode::Char('q') => break,
-                    KeyCode::Char('e') => self.error_popup = None,
-                    KeyCode::Char('j') => self.table_state.select_next(),
-                    KeyCode::Char('k') => self.table_state.select_previous(),
-                    _ => (),
+                if let KeyCode::Char('q') = key.code {
+                    break;
+                } else if let Some(_) = self.error_popup {
+                    if let KeyCode::Char('e') = key.code {
+                        self.error_popup = None
+                    }
+                    continue;
                 }
+                match &self.input_mode {
+                    InputMode::TableRow => self.run_table_row_mode(key),
+                }?;
             }
+        }
+        Ok(())
+    }
+    pub fn run_table_row_mode(&mut self, key: KeyEvent) -> AnyResult<()> {
+        match key.code {
+            KeyCode::Char('j') => self.table_state.select_next(),
+            KeyCode::Char('k') => self.table_state.select_previous(),
+            _ => (),
         }
         Ok(())
     }

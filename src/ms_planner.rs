@@ -175,9 +175,6 @@ pub fn get_plan(path: impl AsRef<Path>) -> AnyResult<Plan> {
         if i == 0 {
             continue;
         }
-        // if i > 2 {
-        //     break;
-        // }
         tasks.push(Task::parse(data)?);
     }
     Ok(Plan {
