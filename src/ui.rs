@@ -36,8 +36,8 @@ pub fn get_headers() -> [Text<'static>; HEADERS_LEN] {
 fn render_filter_list(app: &mut App, f: &mut Frame) {
     let list = if let Some(ui_filter) = &app.filter_view.ui_tag_filter {
         let list = match ui_filter {
-            UiTagFilter::Single(v) => List::new(v.iter().map(|(s, a)| s.as_str())),
-            UiTagFilter::Multi(v) => List::new(v.iter().map(|(s, a)| s.as_str())),
+            UiTagFilter::Single(v) => List::new(v.iter().map(|u| u.as_text())),
+            UiTagFilter::Multi(v) => List::new(v.iter().map(|u| u.as_text())),
         };
         list.block(Block::bordered().title("Filter"))
             .highlight_symbol("|")
@@ -146,6 +146,29 @@ pub enum MultiTagState {
     And,
     Nil,
     Not,
+}
+impl AsText for (String, MultiTagState) {
+    fn as_text(&self) -> Text {
+        use MultiTagState as M;
+        let symbol = match self.1 {
+            M::Or => "+",
+            M::And => "*",
+            M::Not => "-",
+            M::Nil => " ",
+        };
+        Text::from(format!("{symbol} {}", self.0))
+    }
+}
+impl AsText for (String, TagState) {
+    fn as_text(&self) -> Text {
+        use TagState as M;
+        let symbol = match self.1 {
+            M::Or => "+",
+            M::Not => "-",
+            M::Nil => " ",
+        };
+        Text::from(format!("{symbol} {}", self.0))
+    }
 }
 impl<T: FromStr + PartialEq> From<(TagFilter<T>, &[String])> for UiTagFilter {
     fn from((tf, uniques): (TagFilter<T>, &[String])) -> Self {
