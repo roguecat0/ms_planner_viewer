@@ -15,10 +15,10 @@ fn main() -> anyhow::Result<()> {
     } else {
         Config::from_file(CONFIG_PATH)?
     };
+    // Ok(())
 
-    // let terminal = ratatui::init();
-    // let app_result = App::new(plan, config).run(terminal);
-    // ratatui::restore();
-    // app_result
-    Ok(())
+    let terminal = ratatui::init();
+    let app_result = App::new(plan, config).run(terminal);
+    ratatui::restore();
+    app_result
 }

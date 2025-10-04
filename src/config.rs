@@ -1,10 +1,13 @@
 use std::path::Path;
 
+use crate::{
+    AnyResult,
+    ui::{UiColumn, UiTagFilter},
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
 use crate::ms_planner::{Priority, Progress};
-type AnyResult<T> = anyhow::Result<T>;
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct Config {
     pub filter: TaskFilter,
@@ -50,6 +53,28 @@ pub struct TaskFilter {
     pub assigned_to: MultiTagFilter,
     pub created_by: TagFilter<String>,
     pub description: String,
+}
+impl TaskFilter {
+    pub fn get_ui_filter(&self, index: &UiColumn, unique_values: &[String]) -> UiTagFilter {
+        use UiColumn as C;
+        match index {
+            C::Labels => (self.labels.clone(), unique_values).into(),
+            C::Bucket => (self.bucket.clone(), unique_values).into(),
+            C::Priority => (self.priority.clone(), unique_values).into(),
+            C::Progress => (self.progress.clone(), unique_values).into(),
+            C::AssignedTo => (self.assigned_to.clone(), unique_values).into(),
+        }
+    }
+    pub fn get_ui_columns(&self) -> Vec<UiColumn> {
+        use UiColumn as C;
+        vec![
+            C::Bucket,
+            // C::Progress,
+            // C::Priority,
+            C::Labels,
+            C::AssignedTo,
+        ]
+    }
 }
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct MultiTagFilter {

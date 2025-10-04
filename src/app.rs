@@ -1,15 +1,15 @@
 use ratatui::{
     DefaultTerminal,
     crossterm::event::{self, Event, KeyCode, KeyEvent},
-    widgets::TableState,
+    widgets::{ListState, TableState},
 };
 
 use crate::{
-    config::{self, Config},
-    ms_planner::{Plan, Progress, Task},
-    ui,
+    AnyResult,
+    config::{self, Config, UniqueTaskKeys},
+    ms_planner::{Plan, Task},
+    ui::{self, UiColumn, UiTagFilter},
 };
-type AnyResult<T> = anyhow::Result<T>;
 
 pub struct App {
     pub plan: Plan,
@@ -18,20 +18,40 @@ pub struct App {
     pub displayed_tasks: Vec<Task>,
     pub error_popup: Option<String>,
     pub input_mode: InputMode,
+    pub filter_view: FilterView,
+}
+pub struct FilterView {
+    pub state: ListState,
+    pub unique_task_keys: UniqueTaskKeys,
+    pub ui_tag_filter: Option<UiTagFilter>,
 }
 pub enum InputMode {
     TableRow,
+    FilterMode,
 }
 
 impl App {
     pub fn new(plan: Plan, config: Config) -> Self {
+        let buckets = plan.tasks.iter().map(|t| &t.bucket);
+        let labels = plan.tasks.iter().map(|t| &t.labels).flatten();
+        let people = plan.tasks.iter().map(|t| &t.assigned_to).flatten();
+        let unique_task_keys = UniqueTaskKeys {
+            buckets: config::get_unique_strings(buckets),
+            labels: config::get_unique_strings(labels),
+            people: config::get_unique_strings(people),
+        };
         let mut app = App {
             plan,
             config,
             displayed_tasks: vec![],
             error_popup: None,
             table_state: TableState::new().with_selected(0),
-            input_mode: InputMode::TableRow,
+            input_mode: InputMode::FilterMode,
+            filter_view: FilterView {
+                unique_task_keys,
+                state: ListState::default().with_selected(Some(0)),
+                ui_tag_filter: None,
+            },
         };
         app.set_filterd_tasks();
         app
@@ -50,6 +70,7 @@ impl App {
                 }
                 match &self.input_mode {
                     InputMode::TableRow => self.run_table_row_mode(key),
+                    InputMode::FilterMode => self.run_filter_mode(key),
                 }?;
             }
         }
@@ -59,6 +80,42 @@ impl App {
         match key.code {
             KeyCode::Char('j') => self.table_state.select_next(),
             KeyCode::Char('k') => self.table_state.select_previous(),
+            KeyCode::Char('f') => {
+                self.input_mode = InputMode::FilterMode;
+                // self.table_state.select_first();
+            }
+            _ => (),
+        }
+        Ok(())
+    }
+    pub fn run_filter_mode(&mut self, key: KeyEvent) -> AnyResult<()> {
+        match key.code {
+            KeyCode::Char('j') => self.filter_view.state.select_next(),
+            KeyCode::Char('k') => self.filter_view.state.select_previous(),
+            KeyCode::Esc => {
+                if let Some(_) = self.filter_view.ui_tag_filter {
+                    self.filter_view.ui_tag_filter = None;
+                } else {
+                    self.input_mode = InputMode::TableRow;
+                }
+                self.filter_view.state.select_first();
+            }
+            KeyCode::Char(' ') => {
+                if let Some(i) = self.filter_view.state.selected() {
+                    if let None = self.filter_view.ui_tag_filter {
+                        let column = &self.config.filter.get_ui_columns()[i];
+                        let uniques = match column {
+                            UiColumn::Labels => &self.filter_view.unique_task_keys.labels,
+                            UiColumn::Bucket => &self.filter_view.unique_task_keys.buckets,
+                            UiColumn::AssignedTo => &self.filter_view.unique_task_keys.people,
+                            _ => todo!(),
+                        };
+                        self.filter_view.ui_tag_filter =
+                            Some(self.config.filter.get_ui_filter(column, uniques));
+                        self.filter_view.state.select_first();
+                    }
+                }
+            }
             _ => (),
         }
         Ok(())
@@ -68,11 +125,11 @@ impl App {
         sort_tasks(&self.config, &mut filtered_tasks);
         // filtered_tasks = filtered_tasks.into_iter().take(3).collect();
         self.displayed_tasks = filtered_tasks;
-        self.add_error_msg(&format!(
-            "all tasks{}\ntasks found: {}",
-            self.plan.tasks.len(),
-            self.displayed_tasks.len()
-        ));
+        // self.add_error_msg(&format!(
+        //     "all tasks{}\ntasks found: {}",
+        //     self.plan.tasks.len(),
+        //     self.displayed_tasks.len()
+        // ));
     }
     pub fn add_error_msg(&mut self, s: &str) {
         let text = if let Some(text) = &self.error_popup {

@@ -6,12 +6,11 @@ use ratatui::{
     layout::{Constraint, Flex, Layout, Rect},
     style::{Modifier, Style, Stylize},
     text::Text,
-    widgets::{Block, BorderType, Clear, Padding, Paragraph, Row, Table},
+    widgets::{Block, BorderType, Clear, List, Padding, Paragraph, Row, Table},
 };
 
 use crate::{
-    AnyResult,
-    app::App,
+    app::{App, InputMode},
     config::{MultiTagFilter, TagFilter},
     ms_planner::{Priority, Progress, Task},
 };
@@ -19,7 +18,10 @@ const HEADERS_LEN: usize = 5;
 const DATE_CONSTRAINT: Constraint = Constraint::Length(10);
 
 pub fn view(app: &mut App, f: &mut Frame) {
-    render_table(app, f);
+    match app.input_mode {
+        InputMode::TableRow => render_table(app, f),
+        InputMode::FilterMode => render_filter_list(app, f),
+    }
     render_error_box(app, f);
 }
 pub fn get_headers() -> [Text<'static>; HEADERS_LEN] {
@@ -30,6 +32,27 @@ pub fn get_headers() -> [Text<'static>; HEADERS_LEN] {
         "Pri".into(),
         "Created".into(),
     ]
+}
+fn render_filter_list(app: &mut App, f: &mut Frame) {
+    let list = if let Some(ui_filter) = &app.filter_view.ui_tag_filter {
+        let list = match ui_filter {
+            UiTagFilter::Single(v) => List::new(v.iter().map(|(s, a)| s.as_str())),
+            UiTagFilter::Multi(v) => List::new(v.iter().map(|(s, a)| s.as_str())),
+        };
+        list.block(Block::bordered().title("Filter"))
+            .highlight_symbol("|")
+    } else {
+        let list = List::new(
+            app.config
+                .filter
+                .get_ui_columns()
+                .into_iter()
+                .map(Into::<Text>::into),
+        );
+        list.block(Block::bordered().title("Filter"))
+            .highlight_symbol("|")
+    };
+    f.render_stateful_widget(list, f.area(), &mut app.filter_view.state);
 }
 fn render_table(app: &mut App, f: &mut Frame) {
     let headers = Row::new(get_headers());
@@ -85,7 +108,7 @@ fn center(area: Rect, horizontal: Constraint, vertical: Constraint) -> Rect {
     let [area] = Layout::vertical([vertical]).flex(Flex::Center).areas(area);
     area
 }
-trait AsText {
+pub trait AsText {
     fn as_text(&self) -> Text {
         Text::from("lol")
     }
@@ -209,6 +232,24 @@ impl TryFrom<UiTagFilter> for MultiTagFilter {
             Ok(tf)
         } else {
             anyhow::bail!("type conversion: UiTagFilter::Multi to TagFilter")
+        }
+    }
+}
+pub enum UiColumn {
+    Bucket,
+    Progress,
+    Priority,
+    Labels,
+    AssignedTo,
+}
+impl From<UiColumn> for Text<'static> {
+    fn from(value: UiColumn) -> Self {
+        match value {
+            UiColumn::AssignedTo => "assigned to".into(),
+            UiColumn::Progress => "progress".into(),
+            UiColumn::Priority => "prioity".into(),
+            UiColumn::Labels => "labels".into(),
+            UiColumn::Bucket => "bucket".into(),
         }
     }
 }

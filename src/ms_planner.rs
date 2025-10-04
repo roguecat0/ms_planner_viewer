@@ -4,6 +4,7 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, write};
 use std::path::Path;
+use std::str::FromStr;
 
 use crate::lang;
 
@@ -23,6 +24,17 @@ pub enum Progress {
     NotStarted,
     Ongoing,
     Done,
+}
+impl FromStr for Progress {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "NotStarted" => Ok(Self::NotStarted),
+            "Ongoing" => Ok(Self::Ongoing),
+            "Done" => Ok(Self::Done),
+            _ => anyhow::bail!("not a valid progress option: {s}"),
+        }
+    }
 }
 impl From<&str> for Progress {
     fn from(value: &str) -> Self {
@@ -46,6 +58,18 @@ pub enum Priority {
     Mid,
     #[default]
     Low,
+}
+impl FromStr for Priority {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Urgent" => Ok(Self::Urgent),
+            "Important" => Ok(Self::Important),
+            "Mid" => Ok(Self::Mid),
+            "Low" => Ok(Self::Low),
+            _ => anyhow::bail!("not a valid priority option: {s}"),
+        }
+    }
 }
 impl Display for Priority {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
