@@ -4,7 +4,7 @@ const CONFIG_PATH: &str = "./resources/config.toml";
 use ms_planner_viewer::{
     app::App,
     config::{self, Config},
-    ms_planner,
+    ms_planner::{self, Progress},
 };
 fn main() -> anyhow::Result<()> {
     let plan = ms_planner::get_plan(PLAN_PATH)?;
@@ -16,8 +16,9 @@ fn main() -> anyhow::Result<()> {
         Config::from_file(CONFIG_PATH)?
     };
 
-    let terminal = ratatui::init();
-    let app_result = App::new(plan, config).run(terminal);
-    ratatui::restore();
-    app_result
+    // let terminal = ratatui::init();
+    // let app_result = App::new(plan, config).run(terminal);
+    // ratatui::restore();
+    // app_result
+    Ok(())
 }

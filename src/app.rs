@@ -6,7 +6,7 @@ use ratatui::{
 
 use crate::{
     config::{self, Config},
-    ms_planner::{Plan, Task},
+    ms_planner::{Plan, Progress, Task},
     ui,
 };
 type AnyResult<T> = anyhow::Result<T>;

@@ -1,14 +1,18 @@
+use std::str::FromStr;
+
 use ratatui::{
     Frame,
     crossterm::style::Color,
-    layout::{Constraint, Flex, Layout, Margin, Rect},
+    layout::{Constraint, Flex, Layout, Rect},
     style::{Modifier, Style, Stylize},
     text::Text,
-    widgets::{Block, BorderType, Clear, Padding, Paragraph, Row, Table, Widget},
+    widgets::{Block, BorderType, Clear, Padding, Paragraph, Row, Table},
 };
 
 use crate::{
+    AnyResult,
     app::App,
+    config::{MultiTagFilter, TagFilter},
     ms_planner::{Priority, Progress, Task},
 };
 const HEADERS_LEN: usize = 5;
@@ -102,6 +106,109 @@ impl AsText for Progress {
             Self::Done => Text::from("[✓]"),
             Self::Ongoing => Text::from("[-]"),
             Self::NotStarted => Text::from("[ ]"),
+        }
+    }
+}
+pub enum UiTagFilter {
+    Multi(Vec<(String, MultiTagState)>),
+    Single(Vec<(String, TagState)>),
+}
+pub enum TagState {
+    Or,
+    Nil,
+    Not,
+}
+pub enum MultiTagState {
+    Or,
+    And,
+    Nil,
+    Not,
+}
+impl<T: FromStr + PartialEq> From<(TagFilter<T>, &[String])> for UiTagFilter {
+    fn from((tf, uniques): (TagFilter<T>, &[String])) -> Self {
+        let filter = uniques
+            .into_iter()
+            .map(|s| {
+                if let Ok(t) = T::from_str(s) {
+                    if tf.or.contains(&t) {
+                        (s.to_string(), TagState::Or)
+                    } else if tf.not.contains(&t) {
+                        (s.to_string(), TagState::Not)
+                    } else {
+                        (s.to_string(), TagState::Nil)
+                    }
+                } else {
+                    (s.to_string(), TagState::Nil)
+                }
+            })
+            .collect();
+        Self::Single(filter)
+    }
+}
+impl From<(MultiTagFilter, &[String])> for UiTagFilter {
+    fn from((tf, uniques): (MultiTagFilter, &[String])) -> Self {
+        let filter = uniques
+            .into_iter()
+            .map(|s| {
+                if tf.or.contains(s) {
+                    (s.to_string(), MultiTagState::Or)
+                } else if tf.and.contains(s) {
+                    (s.to_string(), MultiTagState::And)
+                } else if tf.not.contains(s) {
+                    (s.to_string(), MultiTagState::Not)
+                } else {
+                    (s.to_string(), MultiTagState::Nil)
+                }
+            })
+            .collect();
+        Self::Multi(filter)
+    }
+}
+impl<T> TryFrom<UiTagFilter> for TagFilter<T>
+where
+    T: FromStr,
+    T::Err: Sync + Send + std::error::Error + 'static,
+{
+    type Error = anyhow::Error;
+    fn try_from(value: UiTagFilter) -> Result<Self, Self::Error> {
+        if let UiTagFilter::Single(v) = value {
+            let mut tf = TagFilter {
+                or: vec![],
+                not: vec![],
+            };
+            for (s, state) in v {
+                match state {
+                    TagState::Or => tf.or.push(T::from_str(&s)?),
+                    TagState::Not => tf.not.push(T::from_str(&s)?),
+                    TagState::Nil => (),
+                }
+            }
+            Ok(tf)
+        } else {
+            anyhow::bail!("type conversion: UiTagFilter::Multi to TagFilter")
+        }
+    }
+}
+impl TryFrom<UiTagFilter> for MultiTagFilter {
+    type Error = anyhow::Error;
+    fn try_from(value: UiTagFilter) -> Result<Self, Self::Error> {
+        if let UiTagFilter::Multi(v) = value {
+            let mut tf = MultiTagFilter {
+                or: vec![],
+                and: vec![],
+                not: vec![],
+            };
+            for (s, state) in v {
+                match state {
+                    MultiTagState::Or => tf.or.push(s),
+                    MultiTagState::And => tf.and.push(s),
+                    MultiTagState::Not => tf.not.push(s),
+                    MultiTagState::Nil => (),
+                }
+            }
+            Ok(tf)
+        } else {
+            anyhow::bail!("type conversion: UiTagFilter::Multi to TagFilter")
         }
     }
 }

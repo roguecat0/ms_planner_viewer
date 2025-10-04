@@ -2,6 +2,7 @@ use calamine::{self, DataType, open_workbook_auto};
 use calamine::{Data, Reader};
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
+use std::fmt::{Display, write};
 use std::path::Path;
 
 use crate::lang;
@@ -33,6 +34,11 @@ impl From<&str> for Progress {
         }
     }
 }
+impl Display for Progress {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
+    }
+}
 #[derive(Default, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Priority {
     Urgent,
@@ -40,6 +46,11 @@ pub enum Priority {
     Mid,
     #[default]
     Low,
+}
+impl Display for Priority {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
+    }
 }
 impl From<&str> for Priority {
     fn from(value: &str) -> Self {

@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
 use crate::ms_planner::{Priority, Progress};
 type AnyResult<T> = anyhow::Result<T>;
@@ -21,6 +22,24 @@ impl Config {
         Ok(())
     }
 }
+
+pub struct UniqueTaskKeys {
+    pub buckets: Vec<String>,
+    pub labels: Vec<String>,
+    pub people: Vec<String>,
+}
+
+pub fn get_unique_strings<'a, I>(i: I) -> Vec<String>
+where
+    I: IntoIterator<Item = &'a String>,
+{
+    i.into_iter()
+        .map(|s| s.clone())
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect()
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct TaskFilter {
     pub name: String,
