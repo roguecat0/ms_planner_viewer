@@ -1,8 +1,8 @@
-use std::path::Path;
+use std::{ops::Index, path::Path};
 
 use crate::{
     AnyResult,
-    ui::{UiColumn, UiTagFilter},
+    ui::{Column, UiColumn, UiTagFilter},
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -55,8 +55,8 @@ pub struct TaskFilter {
     pub description: String,
 }
 impl TaskFilter {
-    pub fn get_ui_filter(&self, index: &UiColumn, unique_values: &[String]) -> UiTagFilter {
-        use UiColumn as C;
+    pub fn get_ui_filter(&self, index: Column, unique_values: &[String]) -> UiTagFilter {
+        use crate::ui::Column as C;
         match index {
             C::Labels => (self.labels.clone(), unique_values).into(),
             C::Bucket => (self.bucket.clone(), unique_values).into(),
@@ -66,7 +66,7 @@ impl TaskFilter {
         }
     }
     pub fn get_ui_columns(&self) -> Vec<UiColumn> {
-        use UiColumn as C;
+        use crate::ui::Column as C;
         vec![
             C::Bucket,
             // C::Progress,
@@ -74,9 +74,21 @@ impl TaskFilter {
             C::Labels,
             C::AssignedTo,
         ]
+        .into_iter()
+        .map(|c| UiColumn {
+            sort: None,
+            filtered: self.has_filter(&c),
+            column: c,
+        })
+        .collect()
     }
-    pub fn update_from_ui_filter(&mut self, column: &UiColumn, tf: &UiTagFilter) {
-        use UiColumn as C;
+    pub fn has_filter(&self, column: &Column) -> bool {
+        match column {
+            Column::Labels => self.labels.has_filter(),
+            Column::Bucket => self.bucket.has_filter(),
+            Column::AssignedTo => self.assigned_to.has_filter(),
+            _ => todo!(),
+        }
     }
 }
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
@@ -129,6 +141,9 @@ impl<T: PartialEq> TagFilter<T> {
         }
         true
     }
+    pub fn has_filter(&self) -> bool {
+        !self.or.is_empty() || !self.not.is_empty()
+    }
 }
 impl MultiTagFilter {
     pub fn filter(&self, tags: &[String]) -> bool {
@@ -148,6 +163,9 @@ impl MultiTagFilter {
             }
         }
         true
+    }
+    pub fn has_filter(&self) -> bool {
+        !self.or.is_empty() || !self.not.is_empty() || !self.and.is_empty()
     }
 }
 pub fn no_case_contains(pattern: &str, text: &str) -> bool {

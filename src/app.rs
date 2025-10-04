@@ -25,7 +25,7 @@ pub struct App {
 pub struct FilterView {
     pub state: ListState,
     pub unique_task_keys: UniqueTaskKeys,
-    pub ui_tag_filter: Option<(UiTagFilter, UiColumn)>,
+    pub ui_tag_filter: Option<(UiTagFilter, ui::Column)>,
 }
 pub enum InputMode {
     TableRow,
@@ -117,28 +117,28 @@ impl App {
                             }
                         }
                         match column {
-                            UiColumn::Labels => {
+                            ui::Column::Labels => {
                                 self.config.filter.labels = filter_tags.clone().try_into()?
                             }
-                            UiColumn::Bucket => {
+                            ui::Column::Bucket => {
                                 self.config.filter.bucket = filter_tags.clone().try_into()?
                             }
-                            UiColumn::AssignedTo => {
+                            ui::Column::AssignedTo => {
                                 self.config.filter.assigned_to = filter_tags.clone().try_into()?
                             }
                             _ => todo!(),
                         };
                     } else {
-                        let column = &self.config.filter.get_ui_columns()[i];
-                        let uniques = match column {
-                            UiColumn::Labels => &self.filter_view.unique_task_keys.labels,
-                            UiColumn::Bucket => &self.filter_view.unique_task_keys.buckets,
-                            UiColumn::AssignedTo => &self.filter_view.unique_task_keys.people,
+                        let ui_col = &self.config.filter.get_ui_columns()[i];
+                        let uniques = match ui_col.column {
+                            ui::Column::Labels => &self.filter_view.unique_task_keys.labels,
+                            ui::Column::Bucket => &self.filter_view.unique_task_keys.buckets,
+                            ui::Column::AssignedTo => &self.filter_view.unique_task_keys.people,
                             _ => todo!(),
                         };
                         self.filter_view.ui_tag_filter = Some((
-                            self.config.filter.get_ui_filter(column, uniques),
-                            column.clone(),
+                            self.config.filter.get_ui_filter(ui_col.column, uniques),
+                            ui_col.column,
                         ));
                         self.filter_view.state.select_first();
                     }

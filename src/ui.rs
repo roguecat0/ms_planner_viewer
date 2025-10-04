@@ -11,7 +11,7 @@ use ratatui::{
 
 use crate::{
     app::{App, InputMode},
-    config::{MultiTagFilter, TagFilter},
+    config::{MultiTagFilter, Order, SortColumn, TagFilter},
     ms_planner::{Priority, Progress, Task},
 };
 const HEADERS_LEN: usize = 5;
@@ -282,8 +282,13 @@ impl TryFrom<UiTagFilter> for MultiTagFilter {
         }
     }
 }
-#[derive(Clone)]
-pub enum UiColumn {
+pub struct UiColumn {
+    pub sort: Option<Order>,
+    pub filtered: bool,
+    pub column: Column,
+}
+#[derive(Clone, Copy)]
+pub enum Column {
     Bucket,
     Progress,
     Priority,
@@ -292,12 +297,24 @@ pub enum UiColumn {
 }
 impl From<UiColumn> for Text<'static> {
     fn from(value: UiColumn) -> Self {
-        match value {
-            UiColumn::AssignedTo => "assigned to".into(),
-            UiColumn::Progress => "progress".into(),
-            UiColumn::Priority => "prioity".into(),
-            UiColumn::Labels => "labels".into(),
-            UiColumn::Bucket => "bucket".into(),
+        use Column as C;
+        let mut s = match value.sort {
+            Some(Order::Asc) => "A ",
+            Some(Order::Desc) => "V ",
+            None => "  ",
+        }
+        .to_string();
+        s += match value.column {
+            C::AssignedTo => "assigned to",
+            C::Progress => "progress",
+            C::Priority => "prioity",
+            C::Labels => "labels",
+            C::Bucket => "bucket",
+        };
+        if value.filtered {
+            Text::from(format!("[*] {s}")).add_modifier(Modifier::BOLD)
+        } else {
+            Text::from(format!("    {s}"))
         }
     }
 }
