@@ -22,6 +22,7 @@ pub struct App {
     pub error_popup: Option<String>,
     pub input_mode: InputMode,
     pub filter_view: FilterView,
+    pub selected_task: Option<usize>,
 }
 pub struct FilterView {
     pub state: ListState,
@@ -55,6 +56,7 @@ impl App {
                 state: ListState::default().with_selected(Some(0)),
                 ui_tag_filter: None,
             },
+            selected_task: None,
         };
         app.set_filterd_tasks();
         app
@@ -81,13 +83,19 @@ impl App {
         Ok(())
     }
     pub fn run_table_row_mode(&mut self, key: KeyEvent) -> AnyResult<()> {
-        match key.code {
-            KeyCode::Char('j') => self.table_state.select_next(),
-            KeyCode::Char('k') => self.table_state.select_previous(),
-            KeyCode::Char('f') => {
+        match (key.code, self.selected_task) {
+            (KeyCode::Char('j'), None) => self.table_state.select_next(),
+            (KeyCode::Char('k'), None) => self.table_state.select_previous(),
+            (KeyCode::Char('f'), None) => {
                 self.input_mode = InputMode::FilterMode;
                 // self.table_state.select_first();
             }
+            (KeyCode::Char(' '), None) => {
+                if let Some(i) = self.table_state.selected() {
+                    self.selected_task = Some(i)
+                }
+            }
+            (KeyCode::Esc, Some(_)) => self.selected_task = None,
             _ => (),
         }
         Ok(())

@@ -7,7 +7,7 @@ use ratatui::{
     layout::{Constraint, Flex, Layout, Rect},
     style::{Modifier, Style, Stylize},
     text::Text,
-    widgets::{Block, BorderType, Clear, List, Padding, Paragraph, Row, Table},
+    widgets::{Block, BorderType, Clear, List, Padding, Paragraph, Row, Table, Wrap},
 };
 
 use crate::{
@@ -74,6 +74,31 @@ fn render_table(app: &mut App, f: &mut Frame, area: Rect) {
         .row_highlight_style(Style::new().add_modifier(Modifier::REVERSED))
         .block(Block::bordered().title("ms planner"));
     f.render_stateful_widget(table, area, &mut app.table_state);
+
+    if let Some(i) = app.selected_task {
+        let task = &app.displayed_tasks[i];
+        let area = center(area, Constraint::Percentage(80), Constraint::Percentage(80));
+        f.render_widget(Clear, area.clone());
+        let block = Block::bordered()
+            .border_type(BorderType::Thick)
+            .title("Task");
+        let inner_area = block.inner(area);
+        f.render_widget(block, area);
+        let [name_area, description_area] =
+            Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(inner_area);
+        f.render_widget(
+            Paragraph::new(task.name.clone())
+                .block(Block::bordered().title("name"))
+                .wrap(Wrap::default()),
+            name_area,
+        );
+        f.render_widget(
+            Paragraph::new(task.description.clone())
+                .block(Block::bordered().title("description"))
+                .wrap(Wrap::default()),
+            description_area,
+        );
+    }
 }
 fn task_to_row(task: &Task) -> Row {
     let cells: [Text; HEADERS_LEN] = [
