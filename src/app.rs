@@ -1,17 +1,15 @@
 use std::ops::IndexMut;
 
-use ratatui::{
-    DefaultTerminal,
-    crossterm::event::{self, Event, KeyCode, KeyEvent},
-    widgets::{ListState, TableState},
-};
-use std::str::FromStr;
-
 use crate::{
     AnyResult, Column,
     config::{self, Config, Order, UniqueTaskKeys},
     ms_planner::{Plan, Priority, Progress, Task},
     ui::{self, UiColumn, UiTagFilter},
+};
+use ratatui::{
+    DefaultTerminal,
+    crossterm::event::{self, Event, KeyCode, KeyEvent},
+    widgets::{ListState, TableState},
 };
 
 pub struct App {
@@ -94,6 +92,10 @@ impl App {
                 if let Some(i) = self.table_state.selected() {
                     self.selected_task = Some(i)
                 }
+            }
+            (KeyCode::Char('L'), Some(i)) => {
+                let url = &self.displayed_tasks[i].to_url(&self.plan.id);
+                webbrowser::open(url)?;
             }
             (KeyCode::Esc, Some(_)) => self.selected_task = None,
             _ => (),
