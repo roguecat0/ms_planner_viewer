@@ -48,7 +48,7 @@ impl App {
             displayed_tasks: vec![],
             error_popup: None,
             table_state: TableState::new().with_selected(0),
-            input_mode: InputMode::FilterMode,
+            input_mode: InputMode::TableRow,
             filter_view: FilterView {
                 unique_task_keys,
                 state: ListState::default().with_selected(Some(0)),
