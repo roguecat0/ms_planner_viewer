@@ -20,8 +20,13 @@ const DATE_CONSTRAINT: Constraint = Constraint::Length(10);
 
 pub fn view(app: &mut App, f: &mut Frame) {
     match app.input_mode {
-        InputMode::TableRow => render_table(app, f),
-        InputMode::FilterMode => render_filter_list(app, f),
+        InputMode::TableRow => render_table(app, f, f.area()),
+        InputMode::FilterMode => {
+            let [filter, table] =
+                Layout::horizontal([Constraint::Fill(1), Constraint::Fill(2)]).areas(f.area());
+            render_filter_list(app, f, filter);
+            render_table(app, f, table);
+        }
     }
     render_error_box(app, f);
 }
@@ -34,7 +39,7 @@ pub fn get_headers() -> [Text<'static>; HEADERS_LEN] {
         "Created".into(),
     ]
 }
-fn render_filter_list(app: &mut App, f: &mut Frame) {
+fn render_filter_list(app: &mut App, f: &mut Frame, area: Rect) {
     let list = if let Some((ui_filter, _)) = &app.filter_view.ui_tag_filter {
         let list = match ui_filter {
             UiTagFilter::Single(v) => List::new(v.iter().map(|u| u.as_text())),
@@ -51,9 +56,9 @@ fn render_filter_list(app: &mut App, f: &mut Frame) {
         list.block(Block::bordered().title("Filter"))
             .highlight_symbol("|")
     };
-    f.render_stateful_widget(list, f.area(), &mut app.filter_view.state);
+    f.render_stateful_widget(list, area, &mut app.filter_view.state);
 }
-fn render_table(app: &mut App, f: &mut Frame) {
+fn render_table(app: &mut App, f: &mut Frame, area: Rect) {
     let headers = Row::new(get_headers());
     let rows = app.displayed_tasks.iter().map(|task| task_to_row(task));
     let cols = [
@@ -68,7 +73,7 @@ fn render_table(app: &mut App, f: &mut Frame) {
         .header(headers)
         .row_highlight_style(Style::new().add_modifier(Modifier::REVERSED))
         .block(Block::bordered().title("ms planner"));
-    f.render_stateful_widget(table, f.area(), &mut app.table_state);
+    f.render_stateful_widget(table, area, &mut app.table_state);
 }
 fn task_to_row(task: &Task) -> Row {
     let cells: [Text; HEADERS_LEN] = [

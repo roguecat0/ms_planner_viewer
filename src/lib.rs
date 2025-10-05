@@ -5,6 +5,7 @@ pub mod ms_planner;
 pub mod ui;
 
 pub type AnyResult<T> = anyhow::Result<T>;
+pub type SimpleResult<T> = Result<T, SimpleError>;
 pub use common::SimpleError;
 pub use config::Column;
 
