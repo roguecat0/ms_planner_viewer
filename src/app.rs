@@ -5,11 +5,12 @@ use ratatui::{
     crossterm::event::{self, Event, KeyCode, KeyEvent},
     widgets::{ListState, TableState},
 };
+use std::str::FromStr;
 
 use crate::{
-    AnyResult,
-    config::{self, Config, UniqueTaskKeys},
-    ms_planner::{Plan, Task},
+    AnyResult, Column,
+    config::{self, Config, Order, UniqueTaskKeys},
+    ms_planner::{Plan, Priority, Progress, Task},
     ui::{self, UiColumn, UiTagFilter},
 };
 
@@ -25,7 +26,7 @@ pub struct App {
 pub struct FilterView {
     pub state: ListState,
     pub unique_task_keys: UniqueTaskKeys,
-    pub ui_tag_filter: Option<(UiTagFilter, ui::Column)>,
+    pub ui_tag_filter: Option<(UiTagFilter, crate::Column)>,
 }
 pub enum InputMode {
     TableRow,
@@ -92,10 +93,10 @@ impl App {
         Ok(())
     }
     pub fn run_filter_mode(&mut self, key: KeyEvent) -> AnyResult<()> {
-        match key.code {
-            KeyCode::Char('j') => self.filter_view.state.select_next(),
-            KeyCode::Char('k') => self.filter_view.state.select_previous(),
-            KeyCode::Esc => {
+        match (key.code, self.filter_view.state.selected()) {
+            (KeyCode::Char('j'), _) => self.filter_view.state.select_next(),
+            (KeyCode::Char('k'), _) => self.filter_view.state.select_previous(),
+            (KeyCode::Esc, _) => {
                 if let Some(_) = self.filter_view.ui_tag_filter {
                     self.filter_view.ui_tag_filter = None;
                 } else {
@@ -103,44 +104,68 @@ impl App {
                 }
                 self.filter_view.state.select_first();
             }
-            KeyCode::Char(' ') => {
-                if let Some(i) = self.filter_view.state.selected() {
-                    if let Some((filter_tags, column)) = &mut self.filter_view.ui_tag_filter {
-                        match filter_tags {
-                            UiTagFilter::Single(v) => {
-                                let (_, state) = v.index_mut(i);
-                                state.next();
-                            }
-                            UiTagFilter::Multi(v) => {
-                                let (_, state) = v.index_mut(i);
-                                state.next();
-                            }
+            (KeyCode::Char(' '), Some(i)) => {
+                if let Some((filter_tags, column)) = &mut self.filter_view.ui_tag_filter {
+                    match filter_tags {
+                        UiTagFilter::Single(v) => {
+                            let (_, state) = v.index_mut(i);
+                            state.next();
                         }
-                        match column {
-                            ui::Column::Labels => {
-                                self.config.filter.labels = filter_tags.clone().try_into()?
-                            }
-                            ui::Column::Bucket => {
-                                self.config.filter.bucket = filter_tags.clone().try_into()?
-                            }
-                            ui::Column::AssignedTo => {
-                                self.config.filter.assigned_to = filter_tags.clone().try_into()?
-                            }
-                            _ => todo!(),
-                        };
+                        UiTagFilter::Multi(v) => {
+                            let (_, state) = v.index_mut(i);
+                            state.next();
+                        }
+                    }
+                    match column {
+                        Column::Labels => {
+                            self.config.filter.labels = filter_tags.clone().try_into()?
+                        }
+                        Column::Bucket => {
+                            self.config.filter.bucket = filter_tags.clone().try_into()?
+                        }
+                        Column::AssignedTo => {
+                            self.config.filter.assigned_to = filter_tags.clone().try_into()?
+                        }
+                        Column::Progress => {
+                            self.config.filter.progress = filter_tags.clone().try_into()?
+                        }
+                        Column::Priority => {
+                            self.config.filter.priority = filter_tags.clone().try_into()?
+                        }
+                        _ => todo!(),
+                    };
+                } else {
+                    let ui_col = &config::get_ui_columns(&self.config.filter, &self.config.sort)[i];
+                    let uniques = match ui_col.column {
+                        Column::Labels => &self.filter_view.unique_task_keys.labels,
+                        Column::Bucket => &self.filter_view.unique_task_keys.buckets,
+                        Column::AssignedTo => &self.filter_view.unique_task_keys.people,
+                        Column::Progress => {
+                            &Progress::items().iter().map(ToString::to_string).collect()
+                        }
+                        Column::Priority => {
+                            &Priority::items().iter().map(ToString::to_string).collect()
+                        }
+                        _ => todo!(),
+                    };
+                    self.filter_view.ui_tag_filter = Some((
+                        self.config.filter.get_ui_filter(ui_col.column, uniques),
+                        ui_col.column,
+                    ));
+                    self.filter_view.state.select_first();
+                }
+            }
+            (KeyCode::Char('s'), Some(i)) => {
+                if let None = self.filter_view.ui_tag_filter {
+                    let UiColumn { sort, column, .. } =
+                        &config::get_ui_columns(&self.config.filter, &self.config.sort)[i];
+                    if let Some(sort) = sort {
+                        self.config.sort.order = match sort {
+                            Order::Desc => Order::Asc,
+                            Order::Asc => Order::Desc,
+                        }
                     } else {
-                        let ui_col = &self.config.filter.get_ui_columns()[i];
-                        let uniques = match ui_col.column {
-                            ui::Column::Labels => &self.filter_view.unique_task_keys.labels,
-                            ui::Column::Bucket => &self.filter_view.unique_task_keys.buckets,
-                            ui::Column::AssignedTo => &self.filter_view.unique_task_keys.people,
-                            _ => todo!(),
-                        };
-                        self.filter_view.ui_tag_filter = Some((
-                            self.config.filter.get_ui_filter(ui_col.column, uniques),
-                            ui_col.column,
-                        ));
-                        self.filter_view.state.select_first();
+                        self.config.sort.column = *column;
                     }
                 }
             }
@@ -184,16 +209,16 @@ fn filter_tasks(config: &Config, tasks: &[Task]) -> Vec<Task> {
     tasks
 }
 fn sort_tasks(config: &Config, tasks: &mut [Task]) {
-    use config::SortColumn as SC;
+    use Column as C;
     match config.sort.column {
-        SC::None => (),
-        SC::Name => tasks.sort_by_key(|task| task.name.clone()),
-        SC::Deadline => tasks.sort_by_key(|task| task.deadline),
-        SC::CreateDate => tasks.sort_by_key(|task| task.create_date),
-        SC::StartDate => tasks.sort_by_key(|task| task.start_date),
-        SC::CompleteDate => tasks.sort_by_key(|task| task.complete_date),
-        SC::Priority => tasks.sort_by_key(|task| task.priority.clone()),
-        SC::Progress => tasks.sort_by_key(|task| task.progress.clone()),
+        C::Name => tasks.sort_by_key(|task| task.name.clone()),
+        C::Deadline => tasks.sort_by_key(|task| task.deadline),
+        C::CreateDate => tasks.sort_by_key(|task| task.create_date),
+        C::StartDate => tasks.sort_by_key(|task| task.start_date),
+        C::CompleteDate => tasks.sort_by_key(|task| task.complete_date),
+        C::Priority => tasks.sort_by_key(|task| task.priority.clone()),
+        C::Progress => tasks.sort_by_key(|task| task.progress.clone()),
+        _ => todo!(),
     }
     if matches!(config.sort.order, config::Order::Asc) {
         tasks.reverse();

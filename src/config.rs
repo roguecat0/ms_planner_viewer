@@ -1,8 +1,8 @@
-use std::{ops::Index, path::Path};
+use std::path::Path;
 
 use crate::{
     AnyResult,
-    ui::{Column, UiColumn, UiTagFilter},
+    ui::{UiColumn, UiTagFilter},
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -56,40 +56,43 @@ pub struct TaskFilter {
 }
 impl TaskFilter {
     pub fn get_ui_filter(&self, index: Column, unique_values: &[String]) -> UiTagFilter {
-        use crate::ui::Column as C;
+        use Column as C;
         match index {
             C::Labels => (self.labels.clone(), unique_values).into(),
             C::Bucket => (self.bucket.clone(), unique_values).into(),
             C::Priority => (self.priority.clone(), unique_values).into(),
             C::Progress => (self.progress.clone(), unique_values).into(),
             C::AssignedTo => (self.assigned_to.clone(), unique_values).into(),
+            _ => todo!(),
         }
-    }
-    pub fn get_ui_columns(&self) -> Vec<UiColumn> {
-        use crate::ui::Column as C;
-        vec![
-            C::Bucket,
-            // C::Progress,
-            // C::Priority,
-            C::Labels,
-            C::AssignedTo,
-        ]
-        .into_iter()
-        .map(|c| UiColumn {
-            sort: None,
-            filtered: self.has_filter(&c),
-            column: c,
-        })
-        .collect()
     }
     pub fn has_filter(&self, column: &Column) -> bool {
         match column {
             Column::Labels => self.labels.has_filter(),
             Column::Bucket => self.bucket.has_filter(),
             Column::AssignedTo => self.assigned_to.has_filter(),
+            Column::Progress => self.progress.has_filter(),
+            Column::Priority => self.priority.has_filter(),
             _ => todo!(),
         }
     }
+}
+pub fn get_ui_columns(tf: &TaskFilter, ts: &TaskSort) -> Vec<UiColumn> {
+    use Column as C;
+    vec![
+        C::Bucket,
+        C::Progress,
+        C::Priority,
+        C::Labels,
+        C::AssignedTo,
+    ]
+    .into_iter()
+    .map(|c| UiColumn {
+        sort: (ts.column == c).then_some(ts.order),
+        filtered: tf.has_filter(&c),
+        column: c,
+    })
+    .collect()
 }
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct MultiTagFilter {
@@ -106,26 +109,28 @@ pub struct TagFilter<T> {
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct TaskSort {
-    pub column: SortColumn,
+    pub column: Column,
     pub order: Order,
 }
-#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[derive(Deserialize, Serialize, Debug, Clone, Default, Copy)]
 pub enum Order {
     Asc,
     #[default]
     Desc,
 }
-#[derive(Deserialize, Serialize, Debug, Clone, Default)]
-pub enum SortColumn {
+#[derive(Deserialize, Serialize, Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum Column {
     #[default]
-    None,
-    Priority,
     Name,
+    Priority,
     CreateDate,
     StartDate,
     Deadline,
     CompleteDate,
     Progress,
+    Bucket,
+    Labels,
+    AssignedTo,
 }
 impl<T: PartialEq> TagFilter<T> {
     pub fn filter(&self, tag: &T) -> bool {

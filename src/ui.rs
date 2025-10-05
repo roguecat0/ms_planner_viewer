@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use crate::{Column, config};
 use ratatui::{
     Frame,
     crossterm::style::Color,
@@ -11,7 +12,7 @@ use ratatui::{
 
 use crate::{
     app::{App, InputMode},
-    config::{MultiTagFilter, Order, SortColumn, TagFilter},
+    config::{MultiTagFilter, Order, TagFilter},
     ms_planner::{Priority, Progress, Task},
 };
 const HEADERS_LEN: usize = 5;
@@ -43,9 +44,7 @@ fn render_filter_list(app: &mut App, f: &mut Frame) {
             .highlight_symbol("|")
     } else {
         let list = List::new(
-            app.config
-                .filter
-                .get_ui_columns()
+            config::get_ui_columns(&app.config.filter, &app.config.sort)
                 .into_iter()
                 .map(Into::<Text>::into),
         );
@@ -109,9 +108,7 @@ fn center(area: Rect, horizontal: Constraint, vertical: Constraint) -> Rect {
     area
 }
 pub trait AsText {
-    fn as_text(&self) -> Text {
-        Text::from("lol")
-    }
+    fn as_text(&self) -> Text;
 }
 impl AsText for Priority {
     fn as_text(&self) -> Text {
@@ -194,7 +191,11 @@ impl AsText for (String, TagState) {
         Text::from(format!("{symbol} {}", self.0))
     }
 }
-impl<T: FromStr + PartialEq> From<(TagFilter<T>, &[String])> for UiTagFilter {
+impl<T> From<(TagFilter<T>, &[String])> for UiTagFilter
+where
+    T: FromStr + PartialEq,
+    T::Err: std::error::Error + Send + Sync + 'static,
+{
     fn from((tf, uniques): (TagFilter<T>, &[String])) -> Self {
         let filter = uniques
             .into_iter()
@@ -287,14 +288,6 @@ pub struct UiColumn {
     pub filtered: bool,
     pub column: Column,
 }
-#[derive(Clone, Copy)]
-pub enum Column {
-    Bucket,
-    Progress,
-    Priority,
-    Labels,
-    AssignedTo,
-}
 impl From<UiColumn> for Text<'static> {
     fn from(value: UiColumn) -> Self {
         use Column as C;
@@ -310,6 +303,7 @@ impl From<UiColumn> for Text<'static> {
             C::Priority => "prioity",
             C::Labels => "labels",
             C::Bucket => "bucket",
+            _ => todo!(),
         };
         if value.filtered {
             Text::from(format!("[*] {s}")).add_modifier(Modifier::BOLD)

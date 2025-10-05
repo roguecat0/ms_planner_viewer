@@ -2,11 +2,11 @@ use calamine::{self, DataType, open_workbook_auto};
 use calamine::{Data, Reader};
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
-use std::fmt::{Display, write};
+use std::fmt::Display;
 use std::path::Path;
 use std::str::FromStr;
 
-use crate::lang;
+use crate::{SimpleError, lang};
 
 const DATA_FMT: &str = "%d-%m-%Y";
 
@@ -25,14 +25,19 @@ pub enum Progress {
     Ongoing,
     Done,
 }
+impl Progress {
+    pub fn items() -> Vec<Self> {
+        vec![Self::NotStarted, Self::Ongoing, Self::Done]
+    }
+}
 impl FromStr for Progress {
-    type Err = anyhow::Error;
+    type Err = SimpleError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "NotStarted" => Ok(Self::NotStarted),
             "Ongoing" => Ok(Self::Ongoing),
             "Done" => Ok(Self::Done),
-            _ => anyhow::bail!("not a valid progress option: {s}"),
+            _ => Err(format!("not a valid progress option: {s}").into()),
         }
     }
 }
@@ -59,15 +64,20 @@ pub enum Priority {
     #[default]
     Low,
 }
+impl Priority {
+    pub fn items() -> Vec<Self> {
+        vec![Self::Urgent, Self::Important, Self::Mid, Self::Low]
+    }
+}
 impl FromStr for Priority {
-    type Err = anyhow::Error;
+    type Err = SimpleError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "Urgent" => Ok(Self::Urgent),
             "Important" => Ok(Self::Important),
             "Mid" => Ok(Self::Mid),
             "Low" => Ok(Self::Low),
-            _ => anyhow::bail!("not a valid priority option: {s}"),
+            _ => Err(format!("conversion not found: {s}").into()),
         }
     }
 }

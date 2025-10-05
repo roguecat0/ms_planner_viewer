@@ -1,11 +1,7 @@
 const PLAN_PATH: &str = "./resources/plan.xlsx";
 const CONFIG_PATH: &str = "./resources/config.toml";
 
-use ms_planner_viewer::{
-    app::App,
-    config::{self, Config},
-    ms_planner::{self, Progress},
-};
+use ms_planner_viewer::{app::App, config::Config, ms_planner};
 fn main() -> anyhow::Result<()> {
     let plan = ms_planner::get_plan(PLAN_PATH)?;
     let config = if !std::fs::exists(CONFIG_PATH)? {
