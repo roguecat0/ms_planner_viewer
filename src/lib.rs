@@ -9,6 +9,9 @@ pub type SimpleResult<T> = Result<T, SimpleError>;
 pub use common::SimpleError;
 pub use config::Column;
 
+pub const PLAN_PATH: &str = "./resources/plan.xlsx";
+pub const CONFIG_PATH: &str = "./resources/config.toml";
+
 pub mod common {
     #[derive(thiserror::Error, Debug)]
     #[error("{0}")]

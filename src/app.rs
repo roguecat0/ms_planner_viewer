@@ -70,6 +70,14 @@ impl App {
                         self.error_popup = None
                     }
                     continue;
+                } else if let KeyCode::Char('S') = key.code {
+                    self.config.to_file(crate::CONFIG_PATH)?;
+                    self.add_error_msg("config saved");
+                } else if let KeyCode::Char('R') = key.code {
+                    self.plan = crate::ms_planner::get_plan(crate::PLAN_PATH)?;
+                    // self.selected_task = None;
+                    // self.filter_view.ui_tag_filter = None;
+                    self.add_error_msg("plan reloaded");
                 }
                 match &self.input_mode {
                     InputMode::TableRow => self.run_table_row_mode(key),
@@ -86,7 +94,6 @@ impl App {
             (KeyCode::Char('k'), None) => self.table_state.select_previous(),
             (KeyCode::Char('f'), None) => {
                 self.input_mode = InputMode::FilterMode;
-                // self.table_state.select_first();
             }
             (KeyCode::Char(' '), None) => {
                 if let Some(i) = self.table_state.selected() {
