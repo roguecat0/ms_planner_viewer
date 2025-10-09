@@ -219,21 +219,13 @@ pub struct UiColumn {
 }
 impl From<UiColumn> for Text<'static> {
     fn from(value: UiColumn) -> Self {
-        use Column as C;
         let mut s = match value.sort {
             Some(Order::Asc) => "A ",
             Some(Order::Desc) => "V ",
             None => "  ",
         }
         .to_string();
-        s += match value.column {
-            C::AssignedTo => "assigned to",
-            C::Progress => "progress",
-            C::Priority => "prioity",
-            C::Labels => "labels",
-            C::Bucket => "bucket",
-            _ => todo!(),
-        };
+        s += &format!("{:?}", value.column);
         match value.filtered {
             FilterType::Tag(true) => Text::from(format!("[*] {s}")).add_modifier(Modifier::BOLD),
             FilterType::Tag(false) => Text::from(format!("[ ] {s}")).add_modifier(Modifier::BOLD),

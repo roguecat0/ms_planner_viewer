@@ -85,6 +85,11 @@ pub fn get_ui_columns(tf: &TaskFilter, ts: &TaskSort) -> Vec<UiColumn> {
         C::Priority,
         C::Labels,
         C::AssignedTo,
+        C::Name,
+        C::Deadline,
+        C::CreateDate,
+        C::StartDate,
+        C::CompleteDate,
     ]
     .into_iter()
     .map(|c| UiColumn {
