@@ -12,7 +12,7 @@ use std::str::FromStr;
 use crate::{
     Column,
     app::App,
-    config::{self, MultiTagFilter, Order, TagFilter},
+    config::{self, MultiTagFilter, Order, TagFilter, TaskFilter},
     ms_planner::{Priority, Progress},
     ui::AsText,
 };
@@ -191,9 +191,30 @@ impl TryFrom<UiTagFilter> for MultiTagFilter {
         }
     }
 }
+pub enum FilterType {
+    Tag(bool),
+    Nil,
+}
+impl FilterType {
+    pub fn new(c: Column, tf: &TaskFilter) -> Self {
+        use Column as C;
+        match c {
+            C::Labels => Self::Tag(tf.labels.has_filter()),
+            C::Bucket => Self::Tag(tf.bucket.has_filter()),
+            C::AssignedTo => Self::Tag(tf.assigned_to.has_filter()),
+            C::Progress => Self::Tag(tf.progress.has_filter()),
+            C::Priority => Self::Tag(tf.priority.has_filter()),
+            C::Name => Self::Nil,
+            C::Deadline => Self::Nil,
+            C::CreateDate => Self::Nil,
+            C::StartDate => Self::Nil,
+            C::CompleteDate => Self::Nil,
+        }
+    }
+}
 pub struct UiColumn {
     pub sort: Option<Order>,
-    pub filtered: bool,
+    pub filtered: FilterType,
     pub column: Column,
 }
 impl From<UiColumn> for Text<'static> {
@@ -213,10 +234,10 @@ impl From<UiColumn> for Text<'static> {
             C::Bucket => "bucket",
             _ => todo!(),
         };
-        if value.filtered {
-            Text::from(format!("[*] {s}")).add_modifier(Modifier::BOLD)
-        } else {
-            Text::from(format!("    {s}"))
+        match value.filtered {
+            FilterType::Tag(true) => Text::from(format!("[*] {s}")).add_modifier(Modifier::BOLD),
+            FilterType::Tag(false) => Text::from(format!("[ ] {s}")).add_modifier(Modifier::BOLD),
+            FilterType::Nil => Text::from(format!("    {s}")).add_modifier(Modifier::BOLD),
         }
     }
 }

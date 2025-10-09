@@ -2,7 +2,7 @@ use std::path::Path;
 
 use crate::{
     AnyResult,
-    filter::{UiColumn, UiTagFilter},
+    filter::{FilterType, UiColumn, UiTagFilter},
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -89,7 +89,7 @@ pub fn get_ui_columns(tf: &TaskFilter, ts: &TaskSort) -> Vec<UiColumn> {
     .into_iter()
     .map(|c| UiColumn {
         sort: (ts.column == c).then_some(ts.order),
-        filtered: tf.has_filter(&c),
+        filtered: FilterType::new(c, tf),
         column: c,
     })
     .collect()
@@ -131,6 +131,11 @@ pub enum Column {
     Bucket,
     Labels,
     AssignedTo,
+}
+impl Column {
+    pub fn filter_type() -> FilterType {
+        todo!()
+    }
 }
 impl<T: PartialEq> TagFilter<T> {
     pub fn filter(&self, tag: &T) -> bool {
