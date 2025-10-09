@@ -1,5 +1,6 @@
 pub mod app;
 pub mod config;
+pub mod filter;
 pub mod lang;
 pub mod ms_planner;
 pub mod ui;

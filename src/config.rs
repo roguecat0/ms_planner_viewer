@@ -2,7 +2,7 @@ use std::path::Path;
 
 use crate::{
     AnyResult,
-    ui::{UiColumn, UiTagFilter},
+    filter::{UiColumn, UiTagFilter},
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;

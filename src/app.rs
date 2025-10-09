@@ -3,8 +3,9 @@ use std::ops::IndexMut;
 use crate::{
     AnyResult, Column,
     config::{self, Config, Order, UniqueTaskKeys},
+    filter::{UiColumn, UiTagFilter},
     ms_planner::{Plan, Priority, Progress, Task},
-    ui::{self, UiColumn, UiTagFilter},
+    ui,
 };
 use ratatui::{
     DefaultTerminal,
