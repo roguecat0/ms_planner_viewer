@@ -1,7 +1,7 @@
 use ratatui::{
     Frame,
-    text::Text,
-    widgets::{Block, List},
+    text::{Span, Text},
+    widgets::{Block, Borders, List, Paragraph},
 };
 use ratatui::{
     layout::Rect,
@@ -18,30 +18,41 @@ use crate::{
     ui::AsText,
 };
 
-pub fn render_filter_list(app: &mut App, f: &mut Frame, area: Rect) {
-    let list = if let FilterViewMode::TagFilter(ui_filter, _) = &app.filter_view.filter_mode {
-        let (list, title) = match ui_filter {
-            UiTagFilter::Single(v) => (
-                List::new(v.iter().map(|u| u.as_text())),
-                "Filter: Single Tag",
-            ),
-            UiTagFilter::Multi(v) => (
-                List::new(v.iter().map(|u| u.as_text())),
-                "Filter: Multi Tag",
-            ),
-        };
-        list.block(Block::bordered().title(title))
-            .highlight_symbol("|")
-    } else {
-        let list = List::new(
-            config::get_ui_columns(&app.config.filter, &app.config.sort)
-                .into_iter()
-                .map(Into::<Text>::into),
-        );
-        list.block(Block::bordered().title("Filter"))
-            .highlight_symbol("|")
+pub fn render_filter_column(app: &mut App, f: &mut Frame, area: Rect) {
+    match &app.filter_view.filter_mode {
+        FilterViewMode::TagFilter(ui_filter, _) => {
+            let (list, title) = match ui_filter {
+                UiTagFilter::Single(v) => (
+                    List::new(v.iter().map(|u| u.as_text())),
+                    "Filter: Single Tag",
+                ),
+                UiTagFilter::Multi(v) => (
+                    List::new(v.iter().map(|u| u.as_text())),
+                    "Filter: Multi Tag",
+                ),
+            };
+            let list = list
+                .block(Block::bordered().title(title))
+                .highlight_symbol("|");
+            f.render_stateful_widget(list, area, &mut app.filter_view.state);
+        }
+        FilterViewMode::Columns => {
+            let list = List::new(
+                config::get_ui_columns(&app.config.filter, &app.config.sort)
+                    .into_iter()
+                    .map(Into::<Text>::into),
+            );
+            let list = list
+                .block(Block::bordered().title("Filter"))
+                .highlight_symbol("|");
+            f.render_stateful_widget(list, area, &mut app.filter_view.state);
+        }
+        FilterViewMode::TextFilter(input, column) => {
+            let block = Block::bordered().title(format!("Text Filter: {column:?}"));
+            let text = format!("search: {}", input.value());
+            f.render_widget(Paragraph::new(text).block(block), area);
+        }
     };
-    f.render_stateful_widget(list, area, &mut app.filter_view.state);
 }
 
 #[derive(Clone)]
@@ -265,6 +276,7 @@ impl SortType {
 #[derive(Clone, Copy)]
 pub enum FilterType {
     Tag(bool),
+    Text(bool),
     Nil,
 }
 impl FilterType {
@@ -276,7 +288,7 @@ impl FilterType {
             C::AssignedTo => Self::Tag(tf.assigned_to.has_filter()),
             C::Progress => Self::Tag(tf.progress.has_filter()),
             C::Priority => Self::Tag(tf.priority.has_filter()),
-            C::Name => Self::Nil,
+            C::Name => Self::Text(!tf.name.is_empty()),
             C::Deadline => Self::Nil,
             C::CreateDate => Self::Nil,
             C::StartDate => Self::Nil,
@@ -300,10 +312,13 @@ impl From<UiColumn> for Text<'static> {
         }
         .to_string();
         s += &format!("{:?}", value.column);
+        use FilterType as FT;
         match value.filtered {
-            FilterType::Tag(true) => Text::from(format!("[*] {s}")).add_modifier(Modifier::BOLD),
-            FilterType::Tag(false) => Text::from(format!("[ ] {s}")),
-            FilterType::Nil => Text::from(format!("    {s}")),
+            FT::Tag(true) | FT::Text(true) => {
+                Text::from(format!("[*] {s}")).add_modifier(Modifier::BOLD)
+            }
+            FT::Tag(false) | FT::Text(false) => Text::from(format!("[ ] {s}")),
+            FT::Nil => Text::from(format!("    {s}")),
         }
     }
 }

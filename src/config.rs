@@ -138,6 +138,7 @@ pub enum Column {
     Bucket,
     Labels,
     AssignedTo,
+    // Description,
 }
 impl<T: PartialEq> TagFilter<T> {
     pub fn filter(&self, tag: &T) -> bool {

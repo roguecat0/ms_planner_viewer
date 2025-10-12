@@ -10,6 +10,7 @@ use ratatui::{
     crossterm::event::{self, Event, KeyCode, KeyEvent},
     widgets::{ListState, TableState},
 };
+use tui_input::backend::crossterm::EventHandler;
 
 pub struct App {
     pub plan: Plan,
@@ -28,6 +29,7 @@ pub struct FilterView {
 }
 pub enum FilterViewMode {
     TagFilter(UiTagFilter, Column),
+    TextFilter(tui_input::Input, Column),
     Columns,
 }
 pub enum InputMode {
@@ -138,6 +140,21 @@ impl App {
             FilterViewMode::TagFilter(ref ui_tag_filter, c) => {
                 self.run_tag_filter(key, ui_tag_filter.clone(), c)?
             }
+            FilterViewMode::TextFilter(ref mut input, c) => match key.code {
+                KeyCode::Esc | KeyCode::Enter => {
+                    self.filter_view.filter_mode = FilterViewMode::Columns
+                }
+                _ => {
+                    input.handle_event(&Event::Key(key));
+                    let text = input.value();
+                    match c {
+                        Column::Name => self.config.filter.name = text.to_string(),
+                        _ => (),
+                        // Column::Description => self.config.filter.description = text.clone(),
+                    }
+                    self.config.to_file(crate::CONFIG_PATH)?;
+                }
+            },
         }
         Ok(())
     }
@@ -242,6 +259,14 @@ impl App {
                             ui_col.column,
                         );
                         self.filter_view.state.select_first();
+                    }
+                    FilterType::Text(_) => {
+                        let text = match ui_col.column {
+                            Column::Name => self.config.filter.name.clone(),
+                            _ => String::new(),
+                        };
+                        self.filter_view.filter_mode =
+                            FilterViewMode::TextFilter(tui_input::Input::new(text), ui_col.column)
                     }
                     FilterType::Nil => {
                         self.add_error_msg("No filtering implemented for this column")

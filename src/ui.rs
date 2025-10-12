@@ -22,7 +22,7 @@ pub fn view(app: &mut App, f: &mut Frame) {
         InputMode::FilterMode => {
             let [filter, table] =
                 Layout::horizontal([Constraint::Fill(1), Constraint::Fill(2)]).areas(f.area());
-            filter::render_filter_list(app, f, filter);
+            filter::render_filter_column(app, f, filter);
             render_table(app, f, table);
         }
     }
