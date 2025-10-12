@@ -45,6 +45,8 @@ where
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct TaskFilter {
+    pub ids: Vec<String>,
+    pub filter_ids: bool,
     pub name: String,
     pub bucket: TagFilter<String>,
     pub progress: TagFilter<Progress>,
@@ -136,11 +138,6 @@ pub enum Column {
     Bucket,
     Labels,
     AssignedTo,
-}
-impl Column {
-    pub fn filter_type() -> FilterType {
-        todo!()
-    }
 }
 impl<T: PartialEq> TagFilter<T> {
     pub fn filter(&self, tag: &T) -> bool {

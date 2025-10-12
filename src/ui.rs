@@ -1,4 +1,4 @@
-use crate::filter;
+use crate::{config::Config, filter, ms_planner::Progress};
 use ratatui::{
     Frame,
     crossterm::style::Color,
@@ -38,7 +38,10 @@ pub fn get_headers() -> [Text<'static>; HEADERS_LEN] {
 }
 fn render_table(app: &mut App, f: &mut Frame, area: Rect) {
     let headers = Row::new(get_headers());
-    let rows = app.displayed_tasks.iter().map(|task| task_to_row(task));
+    let rows = app
+        .displayed_tasks
+        .iter()
+        .map(|task| task_to_row(task, &app.config));
     let cols = [
         Constraint::Fill(1),
         Constraint::Length(15),
@@ -93,9 +96,15 @@ pub mod task {
         );
     }
 }
-fn task_to_row(task: &Task) -> Row<'_> {
+fn task_to_row<'a>(task: &'a Task, config: &'a Config) -> Row<'a> {
+    let name: Text = task.name.clone().into();
+    let name = if config.filter.ids.contains(&task.id) {
+        name.fg(Color::Red)
+    } else {
+        name
+    };
     let cells: [Text; HEADERS_LEN] = [
-        task.name.clone().into(),
+        name,
         task.bucket.clone().into(),
         task.progress.as_text(),
         task.priority.as_text(),

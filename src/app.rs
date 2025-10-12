@@ -103,6 +103,20 @@ impl App {
                     self.selected_task = Some(i)
                 }
             }
+            (KeyCode::Char('F'), None) => {
+                self.config.filter.filter_ids = !self.config.filter.filter_ids;
+                self.config.to_file(crate::CONFIG_PATH)?;
+            }
+            (KeyCode::Char('i'), None) => {
+                if let Some(i) = self.table_state.selected() {
+                    let task = &self.displayed_tasks[i];
+                    if let Some(i) = self.config.filter.ids.iter().position(|id| id == &task.id) {
+                        self.config.filter.ids.remove(i);
+                    } else {
+                        self.config.filter.ids.push(task.id.clone());
+                    }
+                }
+            }
             (KeyCode::Char('L'), Some(i)) => {
                 let url = &self.displayed_tasks[i].to_url(&self.plan.id);
                 webbrowser::open(url)?;
@@ -262,6 +276,8 @@ impl App {
 
 fn filter_tasks(config: &Config, tasks: &[Task]) -> Vec<Task> {
     let tasks = tasks.iter();
+    let tasks =
+        tasks.filter(|&task| !config.filter.filter_ids || config.filter.ids.contains(&task.id));
     let tasks = tasks.filter(|task| config.filter.bucket.filter(&task.bucket));
     let tasks = tasks.filter(|task| config.filter.priority.filter(&task.priority));
     let tasks = tasks.filter(|task| config.filter.progress.filter(&task.progress));
