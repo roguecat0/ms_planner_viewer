@@ -143,37 +143,24 @@ impl App {
                 self.filter_view.state.select_first();
             }
             (KeyCode::Char(' '), Some(i)) => {
-                match &mut ui_tag_filter {
-                    UiTagFilter::Single(v) => {
-                        let (_, state) = v.index_mut(i);
-                        state.next();
-                    }
-                    UiTagFilter::Multi(v) => {
-                        let (_, state) = v.index_mut(i);
-                        state.next();
-                    }
-                }
-                match c {
-                    Column::Labels => {
-                        self.config.filter.labels = ui_tag_filter.clone().try_into()?
-                    }
-                    Column::Bucket => {
-                        self.config.filter.bucket = ui_tag_filter.clone().try_into()?
-                    }
-                    Column::AssignedTo => {
-                        self.config.filter.assigned_to = ui_tag_filter.clone().try_into()?
-                    }
-                    Column::Progress => {
-                        self.config.filter.progress = ui_tag_filter.clone().try_into()?
-                    }
-                    Column::Priority => {
-                        self.config.filter.priority = ui_tag_filter.clone().try_into()?
-                    }
-                    _ => todo!(),
-                };
+                ui_tag_filter.next_state(i);
+                self.update_task_filter(c, &ui_tag_filter)?;
             }
             _ => (),
         }
+        Ok(())
+    }
+    fn update_task_filter(&mut self, c: Column, ui_tag_filter: &UiTagFilter) -> AnyResult<()> {
+        match c {
+            Column::Labels => self.config.filter.labels = ui_tag_filter.clone().try_into()?,
+            Column::Bucket => self.config.filter.bucket = ui_tag_filter.clone().try_into()?,
+            Column::AssignedTo => {
+                self.config.filter.assigned_to = ui_tag_filter.clone().try_into()?
+            }
+            Column::Progress => self.config.filter.progress = ui_tag_filter.clone().try_into()?,
+            Column::Priority => self.config.filter.priority = ui_tag_filter.clone().try_into()?,
+            _ => todo!(),
+        };
         Ok(())
     }
     pub fn run_columns_filter(
