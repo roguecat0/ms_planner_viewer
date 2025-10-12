@@ -190,22 +190,3 @@ pub fn no_case_contains(pattern: &str, text: &str) -> bool {
         true
     }
 }
-
-// id,
-// name,
-// bucket,
-// progress,
-// priority,
-// assigned_to,
-// created_by,
-// create_date,
-// start_date,
-// deadline,
-// recurring,
-// late,
-// complete_date,
-// completed_by,
-// items_completed,
-// items,
-// labels,
-// description,

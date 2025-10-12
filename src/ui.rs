@@ -54,6 +54,12 @@ fn render_table(app: &mut App, f: &mut Frame, area: Rect) {
     f.render_stateful_widget(table, area, &mut app.table_state);
 
     if let Some(i) = app.selected_task {
+        task::view(app, f, area, i);
+    }
+}
+pub mod task {
+    use super::*;
+    pub fn view(app: &mut App, f: &mut Frame, area: Rect, i: usize) {
         let task = &app.displayed_tasks[i];
         let area = center(area, Constraint::Percentage(80), Constraint::Percentage(80));
         f.render_widget(Clear, area.clone());
@@ -62,14 +68,23 @@ fn render_table(app: &mut App, f: &mut Frame, area: Rect) {
             .title("Task");
         let inner_area = block.inner(area);
         f.render_widget(block, area);
-        let [name_area, description_area] =
-            Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(inner_area);
+        let rows_needed = std::cmp::max(task.assigned_to.len(), task.labels.len());
+        let [name_area, middle_area, description_area] = Layout::vertical([
+            Constraint::Length(3),
+            Constraint::Length(rows_needed as u16),
+            Constraint::Fill(1),
+        ])
+        .areas(inner_area);
+        let [labels_area, assigned_area] =
+            Layout::horizontal([Constraint::Fill(2), Constraint::Fill(1)]).areas(middle_area);
         f.render_widget(
             Paragraph::new(task.name.clone())
                 .block(Block::bordered().title("name"))
                 .wrap(Wrap::default()),
             name_area,
         );
+        f.render_widget(Text::from_iter(task.assigned_to.clone()), assigned_area);
+        f.render_widget(Text::from_iter(task.labels.clone()), labels_area);
         f.render_widget(
             Paragraph::new(task.description.clone())
                 .block(Block::bordered().title("description"))
