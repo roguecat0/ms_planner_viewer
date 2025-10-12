@@ -222,7 +222,7 @@ impl App {
                 }
                 self.config.to_file(crate::CONFIG_PATH)?;
             }
-            (KeyCode::Char(' '), Some(ui_col)) => {
+            (KeyCode::Char(' '), Some(ui_col)) | (KeyCode::Char('o'), Some(ui_col)) => {
                 match FilterType::new(ui_col.column, &self.config.filter) {
                     FilterType::Tag(_) => {
                         let uniques = match ui_col.column {

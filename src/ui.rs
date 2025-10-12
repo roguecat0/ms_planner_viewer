@@ -3,7 +3,7 @@ use ratatui::{
     Frame,
     crossterm::style::Color,
     layout::{Constraint, Flex, Layout, Rect},
-    style::{Modifier, Style, Stylize},
+    style::{self, Modifier, Style, Stylize},
     text::Text,
     widgets::{Block, BorderType, Clear, Padding, Paragraph, Row, Table, Wrap},
 };
@@ -12,6 +12,7 @@ use crate::{
     app::{App, InputMode},
     ms_planner::Task,
 };
+use style::palette::tailwind;
 const HEADERS_LEN: usize = 5;
 const DATE_CONSTRAINT: Constraint = Constraint::Length(10);
 
@@ -99,7 +100,7 @@ pub mod task {
 fn task_to_row<'a>(task: &'a Task, config: &'a Config) -> Row<'a> {
     let name: Text = task.name.clone().into();
     let name = if config.filter.ids.contains(&task.id) {
-        name.fg(Color::Red)
+        name.fg(tailwind::ORANGE.c300)
     } else {
         name
     };
