@@ -1,7 +1,7 @@
 use crate::{
     AnyResult, Column,
     config::{self, Config, Order, UniqueTaskKeys},
-    filter::{FilterType, UiColumn, UiTagFilter},
+    filter::{FilterType, SortType, UiColumn, UiTagFilter},
     ms_planner::{Plan, Priority, Progress, Task},
     ui,
 };
@@ -178,6 +178,7 @@ impl App {
             Column::Priority => self.config.filter.priority = ui_tag_filter.clone().try_into()?,
             _ => todo!(),
         };
+        self.config.to_file(crate::CONFIG_PATH)?;
         Ok(())
     }
     pub fn run_columns_filter(
@@ -193,14 +194,19 @@ impl App {
                 self.filter_view.state.select_first();
             }
             (KeyCode::Char('s'), Some(ui_col)) => {
-                if let Some(sort) = ui_col.sort {
-                    self.config.sort.order = match sort {
-                        Order::Desc => Order::Asc,
-                        Order::Asc => Order::Desc,
+                match ui_col.sort {
+                    SortType::Sorted(sort) => {
+                        self.config.sort.order = match sort {
+                            Order::Desc => Order::Asc,
+                            Order::Asc => Order::Desc,
+                        }
                     }
-                } else {
-                    self.config.sort.column = ui_col.column;
+                    SortType::Unsorted => {
+                        self.config.sort.column = ui_col.column;
+                    }
+                    SortType::Nil => self.add_error_msg("sort is not implemented for the column"),
                 }
+                self.config.to_file(crate::CONFIG_PATH)?;
             }
             (KeyCode::Char(' '), Some(ui_col)) => {
                 match FilterType::new(ui_col.column, &self.config.filter) {

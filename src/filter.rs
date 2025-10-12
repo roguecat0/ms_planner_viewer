@@ -13,7 +13,7 @@ use std::str::FromStr;
 use crate::{
     Column,
     app::{App, FilterViewMode},
-    config::{self, MultiTagFilter, Order, TagFilter, TaskFilter},
+    config::{self, MultiTagFilter, Order, TagFilter, TaskFilter, TaskSort},
     ms_planner::{Priority, Progress},
     ui::AsText,
 };
@@ -246,6 +246,23 @@ impl TryFrom<UiTagFilter> for MultiTagFilter {
     }
 }
 #[derive(Clone, Copy)]
+pub enum SortType {
+    Sorted(Order),
+    Unsorted,
+    Nil,
+}
+impl SortType {
+    pub fn new(c: Column, ts: &TaskSort) -> Self {
+        use Column as C;
+        match (c, ts.column == c) {
+            (C::AssignedTo, _) => Self::Nil,
+            (C::Labels, _) => Self::Nil,
+            (_, false) => Self::Unsorted,
+            (_, true) => Self::Sorted(ts.order),
+        }
+    }
+}
+#[derive(Clone, Copy)]
 pub enum FilterType {
     Tag(bool),
     Nil,
@@ -269,23 +286,24 @@ impl FilterType {
 }
 #[derive(Clone)]
 pub struct UiColumn {
-    pub sort: Option<Order>,
+    pub sort: SortType,
     pub filtered: FilterType,
     pub column: Column,
 }
 impl From<UiColumn> for Text<'static> {
     fn from(value: UiColumn) -> Self {
         let mut s = match value.sort {
-            Some(Order::Asc) => "A ",
-            Some(Order::Desc) => "V ",
-            None => "  ",
+            SortType::Sorted(Order::Asc) => "[A] ",
+            SortType::Sorted(Order::Desc) => "[V] ",
+            SortType::Unsorted => "[ ] ",
+            _ => "    ",
         }
         .to_string();
         s += &format!("{:?}", value.column);
         match value.filtered {
             FilterType::Tag(true) => Text::from(format!("[*] {s}")).add_modifier(Modifier::BOLD),
-            FilterType::Tag(false) => Text::from(format!("[ ] {s}")).add_modifier(Modifier::BOLD),
-            FilterType::Nil => Text::from(format!("    {s}")).add_modifier(Modifier::BOLD),
+            FilterType::Tag(false) => Text::from(format!("[ ] {s}")),
+            FilterType::Nil => Text::from(format!("    {s}")),
         }
     }
 }

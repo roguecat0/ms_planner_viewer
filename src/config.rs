@@ -2,7 +2,7 @@ use std::path::Path;
 
 use crate::{
     AnyResult,
-    filter::{FilterType, UiColumn, UiTagFilter},
+    filter::{FilterType, SortType, UiColumn, UiTagFilter},
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -93,7 +93,7 @@ pub fn get_ui_columns(tf: &TaskFilter, ts: &TaskSort) -> Vec<UiColumn> {
     ]
     .into_iter()
     .map(|c| UiColumn {
-        sort: (ts.column == c).then_some(ts.order),
+        sort: SortType::new(c, ts),
         filtered: FilterType::new(c, tf),
         column: c,
     })
