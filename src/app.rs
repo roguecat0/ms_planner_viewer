@@ -167,6 +167,9 @@ impl App {
         Ok(())
     }
     fn update_task_filter(&mut self, c: Column, ui_tag_filter: &UiTagFilter) -> AnyResult<()> {
+        if let FilterViewMode::TagFilter(ref mut tf, _) = self.filter_view.filter_mode {
+            *tf = ui_tag_filter.clone();
+        }
         match c {
             Column::Labels => self.config.filter.labels = ui_tag_filter.clone().try_into()?,
             Column::Bucket => self.config.filter.bucket = ui_tag_filter.clone().try_into()?,
