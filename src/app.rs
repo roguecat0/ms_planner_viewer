@@ -1,7 +1,7 @@
 use crate::{
     AnyResult, Column,
     config::{self, Config, Order, UniqueTaskKeys},
-    filter::{UiColumn, UiTagFilter},
+    filter::{FilterType, UiColumn, UiTagFilter},
     ms_planner::{Plan, Priority, Progress, Task},
     ui,
 };
@@ -203,23 +203,30 @@ impl App {
                 }
             }
             (KeyCode::Char(' '), Some(ui_col)) => {
-                let uniques = match ui_col.column {
-                    Column::Labels => &self.filter_view.unique_task_keys.labels,
-                    Column::Bucket => &self.filter_view.unique_task_keys.buckets,
-                    Column::AssignedTo => &self.filter_view.unique_task_keys.people,
-                    Column::Progress => {
-                        &Progress::items().iter().map(ToString::to_string).collect()
+                match FilterType::new(ui_col.column, &self.config.filter) {
+                    FilterType::Tag(_) => {
+                        let uniques = match ui_col.column {
+                            Column::Labels => &self.filter_view.unique_task_keys.labels,
+                            Column::Bucket => &self.filter_view.unique_task_keys.buckets,
+                            Column::AssignedTo => &self.filter_view.unique_task_keys.people,
+                            Column::Progress => {
+                                &Progress::items().iter().map(ToString::to_string).collect()
+                            }
+                            Column::Priority => {
+                                &Priority::items().iter().map(ToString::to_string).collect()
+                            }
+                            _ => todo!(),
+                        };
+                        self.filter_view.filter_mode = FilterViewMode::TagFilter(
+                            self.config.filter.get_ui_filter(ui_col.column, uniques),
+                            ui_col.column,
+                        );
+                        self.filter_view.state.select_first();
                     }
-                    Column::Priority => {
-                        &Priority::items().iter().map(ToString::to_string).collect()
+                    FilterType::Nil => {
+                        self.add_error_msg("No filtering implemented for this column")
                     }
-                    _ => todo!(),
-                };
-                self.filter_view.filter_mode = FilterViewMode::TagFilter(
-                    self.config.filter.get_ui_filter(ui_col.column, uniques),
-                    ui_col.column,
-                );
-                self.filter_view.state.select_first();
+                }
             }
             _ => (),
         }

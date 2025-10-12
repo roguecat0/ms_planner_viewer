@@ -20,11 +20,17 @@ use crate::{
 
 pub fn render_filter_list(app: &mut App, f: &mut Frame, area: Rect) {
     let list = if let FilterViewMode::TagFilter(ui_filter, _) = &app.filter_view.filter_mode {
-        let list = match ui_filter {
-            UiTagFilter::Single(v) => List::new(v.iter().map(|u| u.as_text())),
-            UiTagFilter::Multi(v) => List::new(v.iter().map(|u| u.as_text())),
+        let (list, title) = match ui_filter {
+            UiTagFilter::Single(v) => (
+                List::new(v.iter().map(|u| u.as_text())),
+                "Filter: Single Tag",
+            ),
+            UiTagFilter::Multi(v) => (
+                List::new(v.iter().map(|u| u.as_text())),
+                "Filter: Multi Tag",
+            ),
         };
-        list.block(Block::bordered().title("Filter"))
+        list.block(Block::bordered().title(title))
             .highlight_symbol("|")
     } else {
         let list = List::new(
@@ -130,7 +136,7 @@ impl AsText for (String, MultiTagState) {
         let symbol = match self.1 {
             M::Or => "+",
             M::And => "*",
-            M::Not => "-",
+            M::Not => "~",
             M::Nil => " ",
         };
         Text::from(format!("{symbol} {}", self.0))
@@ -141,7 +147,7 @@ impl AsText for (String, TagState) {
         use TagState as M;
         let symbol = match self.1 {
             M::Or => "+",
-            M::Not => "-",
+            M::Not => "~",
             M::Nil => " ",
         };
         Text::from(format!("{symbol} {}", self.0))
