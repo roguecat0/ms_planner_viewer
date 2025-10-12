@@ -47,12 +47,45 @@ impl UiTagFilter {
     pub fn next_state(&mut self, index: usize) {
         match self {
             UiTagFilter::Single(v) => {
-                let (_, state) = v.index_mut(index);
-                state.next();
+                v.index_mut(index).1.next();
             }
             UiTagFilter::Multi(v) => {
-                let (_, state) = v.index_mut(index);
-                state.next();
+                v.index_mut(index).1.next();
+            }
+        }
+    }
+    pub fn and_state(&mut self, index: usize) {
+        if let UiTagFilter::Multi(v) = self {
+            v.index_mut(index).1 = MultiTagState::And;
+        }
+    }
+    pub fn or_state(&mut self, index: usize) {
+        match self {
+            UiTagFilter::Single(v) => {
+                v.index_mut(index).1 = TagState::Or;
+            }
+            UiTagFilter::Multi(v) => {
+                v.index_mut(index).1 = MultiTagState::Or;
+            }
+        }
+    }
+    pub fn not_state(&mut self, index: usize) {
+        match self {
+            UiTagFilter::Single(v) => {
+                v.index_mut(index).1 = TagState::Not;
+            }
+            UiTagFilter::Multi(v) => {
+                v.index_mut(index).1 = MultiTagState::Not;
+            }
+        }
+    }
+    pub fn nil_state(&mut self, index: usize) {
+        match self {
+            UiTagFilter::Single(v) => {
+                v.index_mut(index).1 = TagState::Nil;
+            }
+            UiTagFilter::Multi(v) => {
+                v.index_mut(index).1 = MultiTagState::Nil;
             }
         }
     }

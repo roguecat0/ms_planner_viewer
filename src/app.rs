@@ -146,6 +146,22 @@ impl App {
                 ui_tag_filter.next_state(i);
                 self.update_task_filter(c, &ui_tag_filter)?;
             }
+            (KeyCode::Char('a'), Some(i)) => {
+                ui_tag_filter.and_state(i);
+                self.update_task_filter(c, &ui_tag_filter)?;
+            }
+            (KeyCode::Char('o'), Some(i)) => {
+                ui_tag_filter.or_state(i);
+                self.update_task_filter(c, &ui_tag_filter)?;
+            }
+            (KeyCode::Char('n'), Some(i)) => {
+                ui_tag_filter.not_state(i);
+                self.update_task_filter(c, &ui_tag_filter)?;
+            }
+            (KeyCode::Char('u'), Some(i)) => {
+                ui_tag_filter.nil_state(i);
+                self.update_task_filter(c, &ui_tag_filter)?;
+            }
             _ => (),
         }
         Ok(())
