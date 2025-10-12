@@ -7,18 +7,19 @@ use ratatui::{
     layout::Rect,
     style::{Color, Modifier, Stylize},
 };
+use std::ops::IndexMut;
 use std::str::FromStr;
 
 use crate::{
     Column,
-    app::App,
+    app::{App, FilterViewMode},
     config::{self, MultiTagFilter, Order, TagFilter, TaskFilter},
     ms_planner::{Priority, Progress},
     ui::AsText,
 };
 
 pub fn render_filter_list(app: &mut App, f: &mut Frame, area: Rect) {
-    let list = if let Some((ui_filter, _)) = &app.filter_view.ui_tag_filter {
+    let list = if let FilterViewMode::TagFilter(ui_filter, _) = &app.filter_view.filter_mode {
         let list = match ui_filter {
             UiTagFilter::Single(v) => List::new(v.iter().map(|u| u.as_text())),
             UiTagFilter::Multi(v) => List::new(v.iter().map(|u| u.as_text())),
@@ -41,6 +42,20 @@ pub fn render_filter_list(app: &mut App, f: &mut Frame, area: Rect) {
 pub enum UiTagFilter {
     Multi(Vec<(String, MultiTagState)>),
     Single(Vec<(String, TagState)>),
+}
+impl UiTagFilter {
+    pub fn next_state(&mut self, index: usize) {
+        match self {
+            UiTagFilter::Single(v) => {
+                let (_, state) = v.index_mut(index);
+                state.next();
+            }
+            UiTagFilter::Multi(v) => {
+                let (_, state) = v.index_mut(index);
+                state.next();
+            }
+        }
+    }
 }
 #[derive(Clone)]
 pub enum TagState {
@@ -191,6 +206,7 @@ impl TryFrom<UiTagFilter> for MultiTagFilter {
         }
     }
 }
+#[derive(Clone, Copy)]
 pub enum FilterType {
     Tag(bool),
     Nil,
@@ -212,6 +228,7 @@ impl FilterType {
         }
     }
 }
+#[derive(Clone)]
 pub struct UiColumn {
     pub sort: Option<Order>,
     pub filtered: FilterType,
