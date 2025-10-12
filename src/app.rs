@@ -1,5 +1,5 @@
 use crate::{
-    AnyResult, Column,
+    AnyResult, CONFIG_PATH, Column,
     config::{self, Config, Order, UniqueTaskKeys},
     filter::{FilterType, SortType, UiColumn, UiTagFilter},
     ms_planner::{Plan, Priority, Progress, Task},
@@ -224,6 +224,10 @@ impl App {
             (KeyCode::Esc, _) => {
                 self.input_mode = InputMode::TableRow;
                 self.filter_view.state.select_first();
+            }
+            (KeyCode::Char('u'), Some(ui_col)) => {
+                self.config.filter.reset_filter(ui_col.column);
+                self.config.to_file(CONFIG_PATH)?;
             }
             (KeyCode::Char('s'), Some(ui_col)) => {
                 match ui_col.sort {

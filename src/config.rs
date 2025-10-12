@@ -68,15 +68,19 @@ impl TaskFilter {
             _ => todo!(),
         }
     }
-    pub fn has_filter(&self, column: &Column) -> bool {
+    pub fn reset_filter(&mut self, column: Column) {
+        use Column as C;
         match column {
-            Column::Labels => self.labels.has_filter(),
-            Column::Bucket => self.bucket.has_filter(),
-            Column::AssignedTo => self.assigned_to.has_filter(),
-            Column::Progress => self.progress.has_filter(),
-            Column::Priority => self.priority.has_filter(),
-            _ => todo!(),
-        }
+            C::Labels => self.labels = MultiTagFilter::default(),
+            C::Bucket => self.bucket = TagFilter::default(),
+            C::AssignedTo => self.assigned_to = MultiTagFilter::default(),
+            C::Progress => self.progress = TagFilter::default(),
+            C::Priority => self.priority = TagFilter::default(),
+            C::Description => self.description = String::new(),
+            C::Name => self.name = String::new(),
+            C::StartDate | C::Deadline | C::CreateDate => (),
+            C::CompleteDate => (),
+        };
     }
 }
 pub fn get_ui_columns(tf: &TaskFilter, ts: &TaskSort) -> Vec<UiColumn> {
