@@ -78,7 +78,7 @@ fn render_table(app: &mut App, f: &mut Frame, area: Rect) {
         );
     }
 }
-fn task_to_row(task: &Task) -> Row {
+fn task_to_row(task: &Task) -> Row<'_> {
     let cells: [Text; HEADERS_LEN] = [
         task.name.clone().into(),
         task.bucket.clone().into(),
@@ -116,5 +116,5 @@ fn center(area: Rect, horizontal: Constraint, vertical: Constraint) -> Rect {
     area
 }
 pub trait AsText {
-    fn as_text(&self) -> Text;
+    fn as_text(&self) -> Text<'_>;
 }

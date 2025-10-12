@@ -125,7 +125,7 @@ impl MultiTagState {
     }
 }
 impl AsText for (String, MultiTagState) {
-    fn as_text(&self) -> Text {
+    fn as_text(&self) -> Text<'_> {
         use MultiTagState as M;
         let symbol = match self.1 {
             M::Or => "+",
@@ -137,7 +137,7 @@ impl AsText for (String, MultiTagState) {
     }
 }
 impl AsText for (String, TagState) {
-    fn as_text(&self) -> Text {
+    fn as_text(&self) -> Text<'_> {
         use TagState as M;
         let symbol = match self.1 {
             M::Or => "+",
@@ -285,7 +285,7 @@ impl From<UiColumn> for Text<'static> {
 }
 
 impl AsText for Priority {
-    fn as_text(&self) -> Text {
+    fn as_text(&self) -> Text<'_> {
         match self {
             Self::Low => Text::from(" Ⅰ ").fg(Color::Blue),
             Self::Mid => Text::from(" Ⅱ "),
@@ -295,7 +295,7 @@ impl AsText for Priority {
     }
 }
 impl AsText for Progress {
-    fn as_text(&self) -> Text {
+    fn as_text(&self) -> Text<'_> {
         match self {
             Self::Done => Text::from("[✓]"),
             Self::Ongoing => Text::from("[-]"),
