@@ -1,4 +1,4 @@
-use crate::{config::Config, filter, ms_planner::Progress};
+use crate::{config::Config, filter};
 use ratatui::{
     Frame,
     crossterm::style::Color,

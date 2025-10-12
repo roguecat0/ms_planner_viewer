@@ -149,6 +149,7 @@ impl App {
                     let text = input.value();
                     match c {
                         Column::Name => self.config.filter.name = text.to_string(),
+                        Column::Description => self.config.filter.description = text.to_string(),
                         _ => (),
                         // Column::Description => self.config.filter.description = text.clone(),
                     }
@@ -263,6 +264,7 @@ impl App {
                     FilterType::Text(_) => {
                         let text = match ui_col.column {
                             Column::Name => self.config.filter.name.clone(),
+                            Column::Description => self.config.filter.description.clone(),
                             _ => String::new(),
                         };
                         self.filter_view.filter_mode =
@@ -319,6 +321,7 @@ fn sort_tasks(config: &Config, tasks: &mut [Task]) {
     use Column as C;
     match config.sort.column {
         C::Name => tasks.sort_by_key(|task| task.name.clone()),
+        C::Description => tasks.sort_by_key(|task| task.description.clone()),
         C::Deadline => tasks.sort_by_key(|task| task.deadline),
         C::CreateDate => tasks.sort_by_key(|task| task.create_date),
         C::StartDate => tasks.sort_by_key(|task| task.start_date),

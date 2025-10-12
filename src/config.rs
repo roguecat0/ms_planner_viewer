@@ -92,6 +92,7 @@ pub fn get_ui_columns(tf: &TaskFilter, ts: &TaskSort) -> Vec<UiColumn> {
         C::CreateDate,
         C::StartDate,
         C::CompleteDate,
+        C::Description,
     ]
     .into_iter()
     .map(|c| UiColumn {
@@ -138,7 +139,7 @@ pub enum Column {
     Bucket,
     Labels,
     AssignedTo,
-    // Description,
+    Description,
 }
 impl<T: PartialEq> TagFilter<T> {
     pub fn filter(&self, tag: &T) -> bool {

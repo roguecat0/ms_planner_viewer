@@ -1,7 +1,7 @@
 use ratatui::{
     Frame,
-    text::{Span, Text},
-    widgets::{Block, Borders, List, Paragraph},
+    text::Text,
+    widgets::{Block, List, Paragraph},
 };
 use ratatui::{
     layout::Rect,
@@ -289,6 +289,7 @@ impl FilterType {
             C::Progress => Self::Tag(tf.progress.has_filter()),
             C::Priority => Self::Tag(tf.priority.has_filter()),
             C::Name => Self::Text(!tf.name.is_empty()),
+            C::Description => Self::Text(!tf.description.is_empty()),
             C::Deadline => Self::Nil,
             C::CreateDate => Self::Nil,
             C::StartDate => Self::Nil,
