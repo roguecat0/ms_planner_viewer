@@ -100,7 +100,7 @@ impl App {
             (KeyCode::Char('f'), None) => {
                 self.input_mode = InputMode::FilterMode;
             }
-            (KeyCode::Char(' '), None) => {
+            (KeyCode::Char(' '), None) | (KeyCode::Char('o'), None) => {
                 if let Some(i) = self.table_state.selected() {
                     self.selected_task = Some(i)
                 }
