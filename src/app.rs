@@ -119,9 +119,11 @@ impl App {
                     }
                 }
             }
-            (KeyCode::Char('L'), Some(i)) => {
-                let url = &self.displayed_tasks[i].to_url(&self.plan.id);
-                webbrowser::open(url)?;
+            (KeyCode::Char('L'), _) => {
+                if let Some(i) = self.table_state.selected() {
+                    let url = &self.displayed_tasks[i].to_url(&self.plan.id);
+                    webbrowser::open(url)?;
+                }
             }
             (KeyCode::Esc, Some(_)) => self.selected_task = None,
             _ => (),
