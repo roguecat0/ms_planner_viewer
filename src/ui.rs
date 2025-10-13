@@ -61,42 +61,6 @@ fn render_table(app: &mut App, f: &mut Frame, area: Rect) {
         task::view(app, f, area, i);
     }
 }
-pub mod task {
-    use super::*;
-    pub fn view(app: &mut App, f: &mut Frame, area: Rect, i: usize) {
-        let task = &app.displayed_tasks[i];
-        let area = center(area, Constraint::Percentage(80), Constraint::Percentage(80));
-        f.render_widget(Clear, area.clone());
-        let block = Block::bordered()
-            .border_type(BorderType::Thick)
-            .title("Task");
-        let inner_area = block.inner(area);
-        f.render_widget(block, area);
-        let rows_needed = std::cmp::max(task.assigned_to.len(), task.labels.len());
-        let [name_area, middle_area, description_area] = Layout::vertical([
-            Constraint::Length(3),
-            Constraint::Length(rows_needed as u16),
-            Constraint::Fill(1),
-        ])
-        .areas(inner_area);
-        let [labels_area, assigned_area] =
-            Layout::horizontal([Constraint::Fill(2), Constraint::Fill(1)]).areas(middle_area);
-        f.render_widget(
-            Paragraph::new(task.name.clone())
-                .block(Block::bordered().title("name"))
-                .wrap(Wrap::default()),
-            name_area,
-        );
-        f.render_widget(Text::from_iter(task.assigned_to.clone()), assigned_area);
-        f.render_widget(Text::from_iter(task.labels.clone()), labels_area);
-        f.render_widget(
-            Paragraph::new(task.description.clone())
-                .block(Block::bordered().title("description"))
-                .wrap(Wrap::default()),
-            description_area,
-        );
-    }
-}
 fn task_to_row<'a>(task: &'a Task, config: &'a Config) -> Row<'a> {
     let name: Text = task.name.clone().into();
     let name = if config.filter.ids.contains(&task.id) {
@@ -142,4 +106,64 @@ fn center(area: Rect, horizontal: Constraint, vertical: Constraint) -> Rect {
 }
 pub trait AsText {
     fn as_text(&self) -> Text<'_>;
+}
+
+pub mod task {
+    use ratatui::{text::Span, widgets::List};
+
+    use super::*;
+    pub fn view(app: &mut App, f: &mut Frame, area: Rect, i: usize) {
+        let task = &app.displayed_tasks[i];
+        let area = center(area, Constraint::Percentage(80), Constraint::Percentage(80));
+        f.render_widget(Clear, area.clone());
+        let block = Block::bordered()
+            .border_type(BorderType::Thick)
+            .title("Task");
+        let inner_area = block.inner(area);
+        f.render_widget(block, area);
+        let rows_needed = std::cmp::max(task.assigned_to.len(), task.labels.len());
+        let [name_area, middle_area, description_area, items_area] = Layout::vertical([
+            Constraint::Length(3),
+            Constraint::Length(rows_needed as u16),
+            Constraint::Fill(1),
+            Constraint::Length(task.items.len() as u16 + 2),
+        ])
+        .areas(inner_area);
+        let [labels_area, assigned_area] =
+            Layout::horizontal([Constraint::Fill(2), Constraint::Fill(1)]).areas(middle_area);
+        f.render_widget(
+            Paragraph::new(task.name.clone())
+                .block(Block::bordered().title("name"))
+                .wrap(Wrap::default()),
+            name_area,
+        );
+        f.render_widget(Text::from_iter(task.assigned_to.clone()), assigned_area);
+        f.render_widget(Text::from_iter(task.labels.clone()), labels_area);
+        f.render_widget(
+            Paragraph::new(task.description.clone())
+                .block(Block::bordered().title("description"))
+                .wrap(Wrap::default()),
+            description_area,
+        );
+        let list = get_item_list(task);
+        f.render_widget(list, items_area);
+    }
+    pub fn get_item_list<'a>(task: &'a Task) -> List<'a> {
+        let title = format!(
+            "Items: {}",
+            task.items_completed
+                .map(|(i, n)| format!("{i} / {n} "))
+                .unwrap_or(format!("_ / _ "))
+        );
+        let completed = task.items_completed.unwrap_or_default();
+        let checked = Span::from(" [✓] ").fg(Color::Green);
+        let unchecked = Span::from(" [ ] ");
+        let items = task.items.iter().enumerate().map(|(i, s)| if i < completed.0 {
+            checked.clone()
+        } else {
+                unchecked.clone()
+        } + Span::from(s));
+        let list = List::new(items).block(Block::bordered().title(title));
+        list
+    }
 }
