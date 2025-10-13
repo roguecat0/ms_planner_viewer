@@ -1,6 +1,6 @@
 use ratatui::{
     Frame,
-    text::Text,
+    text::{Span, Text},
     widgets::{Block, List, Paragraph},
 };
 use ratatui::{
@@ -305,22 +305,29 @@ pub struct UiColumn {
 }
 impl From<UiColumn> for Text<'static> {
     fn from(value: UiColumn) -> Self {
-        let mut s = match value.sort {
-            SortType::Sorted(Order::Asc) => "[A] ",
-            SortType::Sorted(Order::Desc) => "[V] ",
-            SortType::Unsorted => "[ ] ",
-            _ => "    ",
-        }
-        .to_string();
-        s += &format!("{:?}", value.column);
+        let sort = match value.sort {
+            SortType::Sorted(Order::Asc) => Span::from("[↑]").green(),
+            SortType::Sorted(Order::Desc) => Span::from("[↓]").red(),
+            SortType::Unsorted => Span::from("[ ]"),
+            _ => Span::from("   "),
+        };
+        let mut filtered = false;
         use FilterType as FT;
-        match value.filtered {
+        let filter = match value.filtered {
             FT::Tag(true) | FT::Text(true) => {
-                Text::from(format!("[*] {s}")).add_modifier(Modifier::BOLD)
+                filtered = true;
+                Span::from("[*]")
             }
-            FT::Tag(false) | FT::Text(false) => Text::from(format!("[ ] {s}")),
-            FT::Nil => Text::from(format!("    {s}")),
+            FT::Tag(false) | FT::Text(false) => Span::from("[ ]"),
+            FT::Nil => Span::from("   "),
+        };
+
+        let mut text = Span::from(format!("{:?}", value.column));
+        if filtered {
+            text = text.add_modifier(Modifier::BOLD);
         }
+        let span = sort + " ".into() + filter + Span::from(" ") + text;
+        span.into()
     }
 }
 

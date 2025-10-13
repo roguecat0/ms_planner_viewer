@@ -334,7 +334,8 @@ fn sort_tasks(config: &Config, tasks: &mut [Task]) {
         C::CompleteDate => tasks.sort_by_key(|task| task.complete_date),
         C::Priority => tasks.sort_by_key(|task| task.priority.clone()),
         C::Progress => tasks.sort_by_key(|task| task.progress.clone()),
-        _ => todo!(),
+        C::Bucket => tasks.sort_by_key(|task| task.bucket.clone()),
+        C::Labels | C::AssignedTo => panic!("unable to sort those"),
     }
     if matches!(config.sort.order, config::Order::Asc) {
         tasks.reverse();
