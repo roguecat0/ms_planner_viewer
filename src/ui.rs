@@ -9,8 +9,8 @@ use ratatui::{
 };
 
 use crate::{
+    Task,
     app::{App, InputMode},
-    ms_planner::Task,
 };
 use style::palette::tailwind;
 const HEADERS_LEN: usize = 5;

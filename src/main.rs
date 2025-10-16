@@ -1,6 +1,6 @@
-use ms_planner_viewer::{CONFIG_PATH, PLAN_PATH, app::App, config::Config, ms_planner};
+use ms_planner_viewer::{CONFIG_PATH, PLAN_PATH, Plan, app::App, config::Config};
 fn main() -> anyhow::Result<()> {
-    let plan = ms_planner::get_plan(PLAN_PATH)?;
+    let plan = Plan::from_path(PLAN_PATH)?;
     let config = if !std::fs::exists(CONFIG_PATH)? {
         let config = Config::default();
         config.to_file(CONFIG_PATH)?;

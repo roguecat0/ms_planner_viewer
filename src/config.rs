@@ -1,13 +1,12 @@
 use std::path::Path;
 
 use crate::{
-    AnyResult,
+    AnyResult, Column, Priority, Progress,
     filter::{FilterType, SortType, UiColumn, UiTagFilter},
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
-use crate::ms_planner::{Priority, Progress};
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct Config {
     pub filter: TaskFilter,
@@ -129,21 +128,6 @@ pub enum Order {
     Asc,
     #[default]
     Desc,
-}
-#[derive(Deserialize, Serialize, Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub enum Column {
-    #[default]
-    Name,
-    Priority,
-    CreateDate,
-    StartDate,
-    Deadline,
-    CompleteDate,
-    Progress,
-    Bucket,
-    Labels,
-    AssignedTo,
-    Description,
 }
 impl<T: PartialEq> TagFilter<T> {
     pub fn filter(&self, tag: &T) -> bool {

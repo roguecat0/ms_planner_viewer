@@ -11,10 +11,9 @@ use std::ops::IndexMut;
 use std::str::FromStr;
 
 use crate::{
-    Column,
+    Column, Priority, Progress,
     app::{App, FilterViewMode},
     config::{self, MultiTagFilter, Order, TagFilter, TaskFilter, TaskSort},
-    ms_planner::{Priority, Progress},
     ui::AsText,
 };
 
@@ -332,7 +331,7 @@ impl From<UiColumn> for Text<'static> {
 }
 
 impl AsText for Priority {
-    fn as_text(&self) -> Text<'_> {
+    fn as_text(&self) -> Text<'static> {
         match self {
             Self::Low => Text::from(" Ⅰ ").fg(Color::Blue),
             Self::Mid => Text::from(" Ⅱ "),
@@ -342,7 +341,7 @@ impl AsText for Priority {
     }
 }
 impl AsText for Progress {
-    fn as_text(&self) -> Text<'_> {
+    fn as_text(&self) -> Text<'static> {
         match self {
             Self::Done => Text::from("[✓]"),
             Self::Ongoing => Text::from("[-]"),

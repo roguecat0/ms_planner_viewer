@@ -1,8 +1,7 @@
 use crate::{
-    AnyResult, CONFIG_PATH, Column,
+    AnyResult, CONFIG_PATH, Column, Plan, Priority, Progress, Task,
     config::{self, Config, Order, UniqueTaskKeys},
     filter::{FilterType, SortType, UiColumn, UiTagFilter},
-    ms_planner::{Plan, Priority, Progress, Task},
     ui,
 };
 use ratatui::{
@@ -75,11 +74,8 @@ impl App {
                         self.error_popup = None
                     }
                     continue;
-                } else if let KeyCode::Char('S') = key.code {
-                    self.config.to_file(crate::CONFIG_PATH)?;
-                    self.add_error_msg("config saved");
                 } else if let KeyCode::Char('R') = key.code {
-                    self.plan = crate::ms_planner::get_plan(crate::PLAN_PATH)?;
+                    self.plan = Plan::from_path(crate::PLAN_PATH)?;
                     // self.selected_task = None;
                     // self.filter_view.ui_tag_filter = None;
                     self.add_error_msg("plan reloaded");

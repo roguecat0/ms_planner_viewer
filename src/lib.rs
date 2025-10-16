@@ -2,13 +2,14 @@ pub mod app;
 pub mod config;
 pub mod filter;
 pub mod lang;
-pub mod ms_planner;
+pub mod parse_xlsx;
+pub mod plan;
 pub mod ui;
 
 pub type AnyResult<T> = anyhow::Result<T>;
 pub type SimpleResult<T> = Result<T, SimpleError>;
 pub use common::SimpleError;
-pub use config::Column;
+pub use plan::{Column, Plan, Priority, Progress, Task};
 
 pub const PLAN_PATH: &str = "./resources/plan.xlsx";
 pub const CONFIG_PATH: &str = "./resources/config.toml";
