@@ -35,8 +35,7 @@ pub fn get_unique_strings<'a, I>(i: I) -> Vec<String>
 where
     I: IntoIterator<Item = &'a String>,
 {
-    i.into_iter()
-        .map(|s| s.clone())
+    i.into_iter().cloned()
         .collect::<HashSet<_>>()
         .into_iter()
         .collect()
@@ -131,16 +130,14 @@ pub enum Order {
 }
 impl<T: PartialEq> TagFilter<T> {
     pub fn filter(&self, tag: &T) -> bool {
-        if !self.not.is_empty() {
-            if self.not.contains(tag) {
+        if !self.not.is_empty()
+            && self.not.contains(tag) {
                 return false;
             }
-        }
-        if !self.or.is_empty() {
-            if !self.or.contains(tag) {
+        if !self.or.is_empty()
+            && !self.or.contains(tag) {
                 return false;
             }
-        }
         true
     }
     pub fn has_filter(&self) -> bool {
@@ -149,21 +146,18 @@ impl<T: PartialEq> TagFilter<T> {
 }
 impl MultiTagFilter {
     pub fn filter(&self, tags: &[String]) -> bool {
-        if !self.not.is_empty() {
-            if self.not.iter().any(|f| tags.contains(f)) {
+        if !self.not.is_empty()
+            && self.not.iter().any(|f| tags.contains(f)) {
                 return false;
             }
-        }
-        if !self.or.is_empty() {
-            if !self.or.iter().any(|f| tags.contains(f)) {
+        if !self.or.is_empty()
+            && !self.or.iter().any(|f| tags.contains(f)) {
                 return false;
             }
-        }
-        if !self.and.is_empty() {
-            if !self.and.iter().all(|f| tags.contains(f)) {
+        if !self.and.is_empty()
+            && !self.and.iter().all(|f| tags.contains(f)) {
                 return false;
             }
-        }
         true
     }
     pub fn has_filter(&self) -> bool {

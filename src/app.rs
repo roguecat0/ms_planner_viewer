@@ -39,8 +39,8 @@ pub enum InputMode {
 impl App {
     pub fn new(plan: Plan, config: Config) -> Self {
         let buckets = plan.tasks.iter().map(|t| &t.bucket);
-        let labels = plan.tasks.iter().map(|t| &t.labels).flatten();
-        let people = plan.tasks.iter().map(|t| &t.assigned_to).flatten();
+        let labels = plan.tasks.iter().flat_map(|t| &t.labels);
+        let people = plan.tasks.iter().flat_map(|t| &t.assigned_to);
         let unique_task_keys = UniqueTaskKeys {
             buckets: config::get_unique_strings(buckets),
             labels: config::get_unique_strings(labels),
@@ -69,7 +69,7 @@ impl App {
             if let Event::Key(key) = event::read()? {
                 if let KeyCode::Char('q') = key.code {
                     break;
-                } else if let Some(_) = self.error_popup {
+                } else if self.error_popup.is_some() {
                     if let KeyCode::Esc = key.code {
                         self.error_popup = None
                     }
@@ -130,9 +130,7 @@ impl App {
         match self.filter_view.filter_mode {
             FilterViewMode::Columns => {
                 let selected = self.filter_view.state.selected();
-                let ui_col = selected.and_then(|i| {
-                    Some(config::get_ui_columns(&self.config.filter, &self.config.sort)[i].clone())
-                });
+                let ui_col = selected.map(|i| config::get_ui_columns(&self.config.filter, &self.config.sort)[i].clone());
                 self.run_columns_filter(key, ui_col)?
             }
             FilterViewMode::TagFilter(ref ui_tag_filter, c) => {
@@ -316,8 +314,8 @@ fn filter_tasks(config: &Config, tasks: &[Task]) -> Vec<Task> {
     let tasks = tasks.filter(|task| config::no_case_contains(&config.filter.name, &task.name));
     let tasks = tasks
         .filter(|task| config::no_case_contains(&config.filter.description, &task.description));
-    let tasks = tasks.cloned().collect();
-    tasks
+    
+    tasks.cloned().collect()
 }
 fn sort_tasks(config: &Config, tasks: &mut [Task]) {
     use Column as C;

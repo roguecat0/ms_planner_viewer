@@ -85,7 +85,7 @@ fn to_string_list(slice: &str) -> Vec<String> {
 }
 fn to_option_date(slice: &str) -> AnyResult<Option<NaiveDate>> {
     if !slice.is_empty() {
-        Ok(Some(NaiveDate::parse_from_str(&slice, DATA_FMT)?))
+        Ok(Some(NaiveDate::parse_from_str(slice, DATA_FMT)?))
     } else {
         Ok(None)
     }
@@ -111,7 +111,7 @@ impl Plan {
             id,
             name,
             export_date,
-            tasks: tasks,
+            tasks,
         })
     }
 }

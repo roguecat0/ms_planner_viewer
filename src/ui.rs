@@ -85,7 +85,7 @@ fn render_error_box(app: &mut App, f: &mut Frame) {
             Constraint::Percentage(80),
             Constraint::Percentage(70),
         );
-        f.render_widget(Clear, area.clone());
+        f.render_widget(Clear, area);
         f.render_widget(
             Paragraph::new(error.clone()).block(
                 Block::bordered()
@@ -115,7 +115,7 @@ pub mod task {
     pub fn view(app: &mut App, f: &mut Frame, area: Rect, i: usize) {
         let task = &app.displayed_tasks[i];
         let area = center(area, Constraint::Percentage(80), Constraint::Percentage(80));
-        f.render_widget(Clear, area.clone());
+        f.render_widget(Clear, area);
         let block = Block::bordered()
             .border_type(BorderType::Thick)
             .title("Task");
@@ -153,7 +153,7 @@ pub mod task {
             "Items: {}",
             task.items_completed
                 .map(|(i, n)| format!("{i} / {n} "))
-                .unwrap_or(format!("_ / _ "))
+                .unwrap_or("_ / _ ".to_string())
         );
         let completed = task.items_completed.unwrap_or_default();
         let checked = Span::from(" [✓] ").fg(Color::Green);
@@ -163,7 +163,7 @@ pub mod task {
         } else {
                 unchecked.clone()
         } + Span::from(s));
-        let list = List::new(items).block(Block::bordered().title(title));
-        list
+        
+        List::new(items).block(Block::bordered().title(title))
     }
 }

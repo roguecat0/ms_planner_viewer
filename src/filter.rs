@@ -170,7 +170,7 @@ where
 {
     fn from((tf, uniques): (TagFilter<T>, &[String])) -> Self {
         let filter = uniques
-            .into_iter()
+            .iter()
             .map(|s| {
                 if let Ok(t) = T::from_str(s) {
                     if tf.or.contains(&t) {
@@ -191,7 +191,7 @@ where
 impl From<(MultiTagFilter, &[String])> for UiTagFilter {
     fn from((tf, uniques): (MultiTagFilter, &[String])) -> Self {
         let filter = uniques
-            .into_iter()
+            .iter()
             .map(|s| {
                 if tf.or.contains(s) {
                     (s.to_string(), MultiTagState::Or)
