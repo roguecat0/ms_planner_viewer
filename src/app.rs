@@ -130,7 +130,8 @@ impl App {
         match self.filter_view.filter_mode {
             FilterViewMode::Columns => {
                 let selected = self.filter_view.state.selected();
-                let ui_col = selected.map(|i| config::get_ui_columns(&self.config.filter, &self.config.sort)[i].clone());
+                let ui_col = selected
+                    .map(|i| UiColumn::all(&self.config.filter, &self.config.sort).remove(i));
                 self.run_columns_filter(key, ui_col)?
             }
             FilterViewMode::TagFilter(ref ui_tag_filter, c) => {
@@ -256,7 +257,7 @@ impl App {
                             _ => todo!(),
                         };
                         self.filter_view.filter_mode = FilterViewMode::TagFilter(
-                            self.config.filter.get_ui_filter(ui_col.column, uniques),
+                            UiTagFilter::from_column(ui_col.column, &self.config.filter, uniques),
                             ui_col.column,
                         );
                         self.filter_view.state.select_first();
@@ -314,7 +315,7 @@ fn filter_tasks(config: &Config, tasks: &[Task]) -> Vec<Task> {
     let tasks = tasks.filter(|task| config::no_case_contains(&config.filter.name, &task.name));
     let tasks = tasks
         .filter(|task| config::no_case_contains(&config.filter.description, &task.description));
-    
+
     tasks.cloned().collect()
 }
 fn sort_tasks(config: &Config, tasks: &mut [Task]) {

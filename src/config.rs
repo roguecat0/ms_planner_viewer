@@ -2,7 +2,6 @@ use std::path::Path;
 
 use crate::{
     AnyResult, Column, Priority, Progress,
-    filter::{FilterType, SortType, UiColumn, UiTagFilter},
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -35,7 +34,8 @@ pub fn get_unique_strings<'a, I>(i: I) -> Vec<String>
 where
     I: IntoIterator<Item = &'a String>,
 {
-    i.into_iter().cloned()
+    i.into_iter()
+        .cloned()
         .collect::<HashSet<_>>()
         .into_iter()
         .collect()
@@ -55,17 +55,6 @@ pub struct TaskFilter {
     pub description: String,
 }
 impl TaskFilter {
-    pub fn get_ui_filter(&self, index: Column, unique_values: &[String]) -> UiTagFilter {
-        use Column as C;
-        match index {
-            C::Labels => (self.labels.clone(), unique_values).into(),
-            C::Bucket => (self.bucket.clone(), unique_values).into(),
-            C::Priority => (self.priority.clone(), unique_values).into(),
-            C::Progress => (self.progress.clone(), unique_values).into(),
-            C::AssignedTo => (self.assigned_to.clone(), unique_values).into(),
-            _ => todo!(),
-        }
-    }
     pub fn reset_filter(&mut self, column: Column) {
         use Column as C;
         match column {
@@ -81,29 +70,7 @@ impl TaskFilter {
         };
     }
 }
-pub fn get_ui_columns(tf: &TaskFilter, ts: &TaskSort) -> Vec<UiColumn> {
-    use Column as C;
-    vec![
-        C::Bucket,
-        C::Progress,
-        C::Priority,
-        C::Labels,
-        C::AssignedTo,
-        C::Name,
-        C::Deadline,
-        C::CreateDate,
-        C::StartDate,
-        C::CompleteDate,
-        C::Description,
-    ]
-    .into_iter()
-    .map(|c| UiColumn {
-        sort: SortType::new(c, ts),
-        filtered: FilterType::new(c, tf),
-        column: c,
-    })
-    .collect()
-}
+
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct MultiTagFilter {
     pub and: Vec<String>,
@@ -130,14 +97,12 @@ pub enum Order {
 }
 impl<T: PartialEq> TagFilter<T> {
     pub fn filter(&self, tag: &T) -> bool {
-        if !self.not.is_empty()
-            && self.not.contains(tag) {
-                return false;
-            }
-        if !self.or.is_empty()
-            && !self.or.contains(tag) {
-                return false;
-            }
+        if !self.not.is_empty() && self.not.contains(tag) {
+            return false;
+        }
+        if !self.or.is_empty() && !self.or.contains(tag) {
+            return false;
+        }
         true
     }
     pub fn has_filter(&self) -> bool {
@@ -146,18 +111,15 @@ impl<T: PartialEq> TagFilter<T> {
 }
 impl MultiTagFilter {
     pub fn filter(&self, tags: &[String]) -> bool {
-        if !self.not.is_empty()
-            && self.not.iter().any(|f| tags.contains(f)) {
-                return false;
-            }
-        if !self.or.is_empty()
-            && !self.or.iter().any(|f| tags.contains(f)) {
-                return false;
-            }
-        if !self.and.is_empty()
-            && !self.and.iter().all(|f| tags.contains(f)) {
-                return false;
-            }
+        if !self.not.is_empty() && self.not.iter().any(|f| tags.contains(f)) {
+            return false;
+        }
+        if !self.or.is_empty() && !self.or.iter().any(|f| tags.contains(f)) {
+            return false;
+        }
+        if !self.and.is_empty() && !self.and.iter().all(|f| tags.contains(f)) {
+            return false;
+        }
         true
     }
     pub fn has_filter(&self) -> bool {

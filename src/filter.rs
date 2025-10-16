@@ -13,7 +13,7 @@ use std::str::FromStr;
 use crate::{
     Column, Priority, Progress,
     app::{App, FilterViewMode},
-    config::{self, MultiTagFilter, Order, TagFilter, TaskFilter, TaskSort},
+    config::{MultiTagFilter, Order, TagFilter, TaskFilter, TaskSort},
     ui::AsText,
 };
 
@@ -22,11 +22,11 @@ pub fn render_filter_column(app: &mut App, f: &mut Frame, area: Rect) {
         FilterViewMode::TagFilter(ui_filter, _) => {
             let (list, title) = match ui_filter {
                 UiTagFilter::Single(v) => (
-                    List::new(v.iter().map(|u| u.as_text())),
+                    List::new(v.iter().map(|(name, tag_state)| tag_state.as_text(&name))),
                     "Filter: Single Tag",
                 ),
                 UiTagFilter::Multi(v) => (
-                    List::new(v.iter().map(|u| u.as_text())),
+                    List::new(v.iter().map(|(name, tag_state)| tag_state.as_text(&name))),
                     "Filter: Multi Tag",
                 ),
             };
@@ -37,7 +37,7 @@ pub fn render_filter_column(app: &mut App, f: &mut Frame, area: Rect) {
         }
         FilterViewMode::Columns => {
             let list = List::new(
-                config::get_ui_columns(&app.config.filter, &app.config.sort)
+                UiColumn::all(&app.config.filter, &app.config.sort)
                     .into_iter()
                     .map(Into::<Text>::into),
             );
@@ -105,6 +105,57 @@ impl UiTagFilter {
             }
         }
     }
+    pub fn from_column(c: Column, tf: &TaskFilter, uniques: &[String]) -> Self {
+        use Column as C;
+        match c {
+            C::Labels => Self::from_multi_tag_filter(&tf.labels, uniques),
+            C::Bucket => Self::from_tag_filter(&tf.bucket, uniques),
+            C::Priority => Self::from_tag_filter(&tf.priority, uniques),
+            C::Progress => Self::from_tag_filter(&tf.progress.clone(), uniques),
+            C::AssignedTo => Self::from_multi_tag_filter(&tf.assigned_to.clone(), uniques),
+            _ => todo!(),
+        }
+    }
+    fn from_multi_tag_filter(tf: &MultiTagFilter, uniques: &[String]) -> Self {
+        let filter = uniques
+            .iter()
+            .map(|s| {
+                if tf.or.contains(s) {
+                    (s.to_string(), MultiTagState::Or)
+                } else if tf.and.contains(s) {
+                    (s.to_string(), MultiTagState::And)
+                } else if tf.not.contains(s) {
+                    (s.to_string(), MultiTagState::Not)
+                } else {
+                    (s.to_string(), MultiTagState::Nil)
+                }
+            })
+            .collect();
+        Self::Multi(filter)
+    }
+    fn from_tag_filter<T>(tf: &TagFilter<T>, uniques: &[String]) -> Self
+    where
+        T: FromStr + PartialEq,
+        T::Err: std::error::Error + Send + Sync + 'static,
+    {
+        let filter = uniques
+            .iter()
+            .map(|s| {
+                if let Ok(t) = T::from_str(s) {
+                    if tf.or.contains(&t) {
+                        (s.to_string(), TagState::Or)
+                    } else if tf.not.contains(&t) {
+                        (s.to_string(), TagState::Not)
+                    } else {
+                        (s.to_string(), TagState::Nil)
+                    }
+                } else {
+                    (s.to_string(), TagState::Nil)
+                }
+            })
+            .collect();
+        Self::Single(filter)
+    }
 }
 #[derive(Clone)]
 pub enum TagState {
@@ -128,6 +179,15 @@ impl TagState {
         };
         let _ = std::mem::replace(self, next);
     }
+    pub fn as_text(&self, value: &str) -> Text<'static> {
+        use TagState as M;
+        let symbol = match self {
+            M::Or => "+",
+            M::Not => "~",
+            M::Nil => " ",
+        };
+        Text::from(format!("{symbol} {}", value))
+    }
 }
 impl MultiTagState {
     pub fn next(&mut self) {
@@ -139,72 +199,15 @@ impl MultiTagState {
         };
         let _ = std::mem::replace(self, next);
     }
-}
-impl AsText for (String, MultiTagState) {
-    fn as_text(&self) -> Text<'_> {
+    pub fn as_text(&self, value: &str) -> Text<'static> {
         use MultiTagState as M;
-        let symbol = match self.1 {
+        let symbol = match self {
             M::Or => "+",
             M::And => "*",
             M::Not => "~",
             M::Nil => " ",
         };
-        Text::from(format!("{symbol} {}", self.0))
-    }
-}
-impl AsText for (String, TagState) {
-    fn as_text(&self) -> Text<'_> {
-        use TagState as M;
-        let symbol = match self.1 {
-            M::Or => "+",
-            M::Not => "~",
-            M::Nil => " ",
-        };
-        Text::from(format!("{symbol} {}", self.0))
-    }
-}
-impl<T> From<(TagFilter<T>, &[String])> for UiTagFilter
-where
-    T: FromStr + PartialEq,
-    T::Err: std::error::Error + Send + Sync + 'static,
-{
-    fn from((tf, uniques): (TagFilter<T>, &[String])) -> Self {
-        let filter = uniques
-            .iter()
-            .map(|s| {
-                if let Ok(t) = T::from_str(s) {
-                    if tf.or.contains(&t) {
-                        (s.to_string(), TagState::Or)
-                    } else if tf.not.contains(&t) {
-                        (s.to_string(), TagState::Not)
-                    } else {
-                        (s.to_string(), TagState::Nil)
-                    }
-                } else {
-                    (s.to_string(), TagState::Nil)
-                }
-            })
-            .collect();
-        Self::Single(filter)
-    }
-}
-impl From<(MultiTagFilter, &[String])> for UiTagFilter {
-    fn from((tf, uniques): (MultiTagFilter, &[String])) -> Self {
-        let filter = uniques
-            .iter()
-            .map(|s| {
-                if tf.or.contains(s) {
-                    (s.to_string(), MultiTagState::Or)
-                } else if tf.and.contains(s) {
-                    (s.to_string(), MultiTagState::And)
-                } else if tf.not.contains(s) {
-                    (s.to_string(), MultiTagState::Not)
-                } else {
-                    (s.to_string(), MultiTagState::Nil)
-                }
-            })
-            .collect();
-        Self::Multi(filter)
+        Text::from(format!("{symbol} {}", value))
     }
 }
 impl<T> TryFrom<UiTagFilter> for TagFilter<T>
@@ -301,6 +304,31 @@ pub struct UiColumn {
     pub sort: SortType,
     pub filtered: FilterType,
     pub column: Column,
+}
+impl UiColumn {
+    pub fn all(tf: &TaskFilter, ts: &TaskSort) -> Vec<UiColumn> {
+        use Column as C;
+        vec![
+            C::Bucket,
+            C::Progress,
+            C::Priority,
+            C::Labels,
+            C::AssignedTo,
+            C::Name,
+            C::Deadline,
+            C::CreateDate,
+            C::StartDate,
+            C::CompleteDate,
+            C::Description,
+        ]
+        .into_iter()
+        .map(|c| UiColumn {
+            sort: SortType::new(c, ts),
+            filtered: FilterType::new(c, tf),
+            column: c,
+        })
+        .collect()
+    }
 }
 impl From<UiColumn> for Text<'static> {
     fn from(value: UiColumn) -> Self {
