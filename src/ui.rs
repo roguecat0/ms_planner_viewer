@@ -156,14 +156,14 @@ pub mod task {
                 .unwrap_or("_ / _ ".to_string())
         );
         let completed = task.items_completed.unwrap_or_default();
-        let checked = Span::from(" [✓] ").fg(Color::Green);
-        let unchecked = Span::from(" [ ] ");
+        let checked = Span::from(" [?] ").fg(Color::Blue);
+        let unchecked = Span::from(" [?] ").fg(Color::Blue);
         let items = task.items.iter().enumerate().map(|(i, s)| if i < completed.0 {
             checked.clone()
         } else {
                 unchecked.clone()
         } + Span::from(s));
-        
+
         List::new(items).block(Block::bordered().title(title))
     }
 }
