@@ -22,11 +22,11 @@ pub fn render_filter_column(app: &mut App, f: &mut Frame, area: Rect) {
         FilterViewMode::TagFilter(ui_filter, _) => {
             let (list, title) = match ui_filter {
                 UiTagFilter::Single(v) => (
-                    List::new(v.iter().map(|(name, tag_state)| tag_state.as_text(&name))),
+                    List::new(v.iter().map(|(name, tag_state)| tag_state.as_text(name))),
                     "Filter: Single Tag",
                 ),
                 UiTagFilter::Multi(v) => (
-                    List::new(v.iter().map(|(name, tag_state)| tag_state.as_text(&name))),
+                    List::new(v.iter().map(|(name, tag_state)| tag_state.as_text(name))),
                     "Filter: Multi Tag",
                 ),
             };
@@ -186,7 +186,7 @@ impl TagState {
             M::Not => "~",
             M::Nil => " ",
         };
-        Text::from(format!("{symbol} {}", value))
+        Text::from(format!("{symbol} {value}"))
     }
 }
 impl MultiTagState {
@@ -207,7 +207,7 @@ impl MultiTagState {
             M::Not => "~",
             M::Nil => " ",
         };
-        Text::from(format!("{symbol} {}", value))
+        Text::from(format!("{symbol} {value}"))
     }
 }
 impl<T> TryFrom<UiTagFilter> for TagFilter<T>
