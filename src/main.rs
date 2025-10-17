@@ -1,3 +1,4 @@
+use chrono::{DateTime, NaiveDateTime};
 use ms_planner_viewer::{CONFIG_PATH, PLAN_PATH, Plan, app::App, config::Config};
 fn main() -> anyhow::Result<()> {
     let plan = Plan::from_path(PLAN_PATH)?;
@@ -8,7 +9,6 @@ fn main() -> anyhow::Result<()> {
     } else {
         Config::from_file(CONFIG_PATH)?
     };
-    // Ok(())
 
     let terminal = ratatui::init();
     let app_result = App::new(plan, config).run(terminal);

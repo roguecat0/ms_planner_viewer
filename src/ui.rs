@@ -13,7 +13,7 @@ use crate::{
     app::{App, InputMode},
 };
 use style::palette::tailwind;
-const HEADERS_LEN: usize = 6;
+const HEADERS_LEN: usize = 7;
 const DATE_CONSTRAINT: Constraint = Constraint::Length(10);
 
 pub fn view(app: &mut App, f: &mut Frame) {
@@ -59,6 +59,7 @@ pub trait AsText {
     fn as_text(&self) -> Text<'_>;
 }
 pub mod table {
+    use chrono::{NaiveDate, NaiveDateTime};
     use ratatui::{
         layout::Alignment,
         text::{Line, Span},
@@ -73,6 +74,7 @@ pub mod table {
             "Pri".into(),
             "Items".into(),
             "Created".into(),
+            "Deadline".into(),
         ]
     }
     pub fn view(app: &mut App, f: &mut Frame, area: Rect) {
@@ -87,6 +89,7 @@ pub mod table {
             Constraint::Length(3),
             Constraint::Length(3),
             Constraint::Length(5),
+            DATE_CONSTRAINT,
             DATE_CONSTRAINT,
         ];
 
@@ -114,8 +117,23 @@ pub mod table {
             task.priority.as_text(),
             complete_items_text(task.items_completed),
             task.create_date.to_string().into(),
+            deadline_text(task.deadline),
         ];
         Row::new(cells)
+    }
+    fn deadline_text(deadeline: Option<NaiveDate>) -> Text<'static> {
+        let now = chrono::offset::Utc::now();
+        if let Some(d) = deadeline {
+            let deadline = NaiveDateTime::from(d).and_utc();
+            let text = Text::from(d.to_string());
+            if deadline > now {
+                text
+            } else {
+                text.light_red()
+            }
+        } else {
+            Text::default()
+        }
     }
     fn complete_items_text<'a>(items: Option<(usize, usize)>) -> Text<'a> {
         let text: Text = if let Some((completed, all)) = items {
