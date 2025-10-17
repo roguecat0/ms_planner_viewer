@@ -109,7 +109,11 @@ pub trait AsText {
 }
 
 pub mod task {
-    use ratatui::{text::Span, widgets::List};
+    use ratatui::{
+        symbols,
+        text::{Line, Span},
+        widgets::List,
+    };
 
     use super::*;
     pub fn view(app: &mut App, f: &mut Frame, area: Rect, i: usize) {
@@ -156,13 +160,20 @@ pub mod task {
                 .unwrap_or("_ / _ ".to_string())
         );
         let completed = task.items_completed.unwrap_or_default();
-        let checked = Span::from(" [?] ").fg(Color::Blue);
-        let unchecked = Span::from(" [?] ").fg(Color::Blue);
-        let items = task.items.iter().enumerate().map(|(i, s)| if i < completed.0 {
-            checked.clone()
+        let checked = Span::from(" [✓] ").fg(Color::Green);
+        let unknown = Span::from(" [?] ").fg(Color::Blue);
+        let unchecked = Span::from(" [x] ").fg(Color::Red);
+        let symbol = if completed.0 == completed.1 {
+            checked
+        } else if completed.0 == 0 {
+            unchecked
         } else {
-                unchecked.clone()
-        } + Span::from(s));
+            unknown
+        };
+        let items = task
+            .items
+            .iter()
+            .map(|s| Line::from_iter([symbol.clone(), Span::from(s)]));
 
         List::new(items).block(Block::bordered().title(title))
     }
