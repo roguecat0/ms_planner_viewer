@@ -13,69 +13,20 @@ use crate::{
     app::{App, InputMode},
 };
 use style::palette::tailwind;
-const HEADERS_LEN: usize = 5;
+const HEADERS_LEN: usize = 6;
 const DATE_CONSTRAINT: Constraint = Constraint::Length(10);
 
 pub fn view(app: &mut App, f: &mut Frame) {
     match app.input_mode {
-        InputMode::TableRow => render_table(app, f, f.area()),
+        InputMode::TableRow => table::view(app, f, f.area()),
         InputMode::FilterMode => {
             let [filter, table] =
                 Layout::horizontal([Constraint::Fill(1), Constraint::Fill(2)]).areas(f.area());
             filter::render_filter_column(app, f, filter);
-            render_table(app, f, table);
+            table::view(app, f, table);
         }
     }
     render_error_box(app, f);
-}
-pub fn get_headers() -> [Text<'static>; HEADERS_LEN] {
-    [
-        "Name".into(),
-        "Bucket".into(),
-        "Pro".into(),
-        "Pri".into(),
-        "Created".into(),
-    ]
-}
-fn render_table(app: &mut App, f: &mut Frame, area: Rect) {
-    let headers = Row::new(get_headers());
-    let rows = app
-        .displayed_tasks
-        .iter()
-        .map(|task| task_to_row(task, &app.config));
-    let cols = [
-        Constraint::Fill(1),
-        Constraint::Length(15),
-        Constraint::Length(3),
-        Constraint::Length(3),
-        DATE_CONSTRAINT,
-    ];
-
-    let table = Table::new(rows, cols)
-        .header(headers)
-        .row_highlight_style(Style::new().add_modifier(Modifier::REVERSED))
-        .block(Block::bordered().title("ms planner"));
-    f.render_stateful_widget(table, area, &mut app.table_state);
-
-    if let Some(i) = app.selected_task {
-        task::view(app, f, area, i);
-    }
-}
-fn task_to_row<'a>(task: &'a Task, config: &'a Config) -> Row<'a> {
-    let name: Text = task.name.clone().into();
-    let name = if config.filter.ids.contains(&task.id) {
-        name.fg(tailwind::ORANGE.c300)
-    } else {
-        name
-    };
-    let cells: [Text; HEADERS_LEN] = [
-        name,
-        task.bucket.clone().into(),
-        task.progress.as_text(),
-        task.priority.as_text(),
-        task.create_date.to_string().into(),
-    ];
-    Row::new(cells)
 }
 
 fn render_error_box(app: &mut App, f: &mut Frame) {
@@ -107,10 +58,84 @@ fn center(area: Rect, horizontal: Constraint, vertical: Constraint) -> Rect {
 pub trait AsText {
     fn as_text(&self) -> Text<'_>;
 }
+pub mod table {
+    use ratatui::{
+        layout::Alignment,
+        text::{Line, Span},
+    };
+
+    use super::*;
+    pub fn get_headers() -> [Text<'static>; HEADERS_LEN] {
+        [
+            "Name".into(),
+            "Bucket".into(),
+            "Pro".into(),
+            "Pri".into(),
+            "Items".into(),
+            "Created".into(),
+        ]
+    }
+    pub fn view(app: &mut App, f: &mut Frame, area: Rect) {
+        let headers = Row::new(get_headers());
+        let rows = app
+            .displayed_tasks
+            .iter()
+            .map(|task| task_to_row(task, &app.config));
+        let cols: [Constraint; HEADERS_LEN] = [
+            Constraint::Fill(1),
+            Constraint::Length(15),
+            Constraint::Length(3),
+            Constraint::Length(3),
+            Constraint::Length(5),
+            DATE_CONSTRAINT,
+        ];
+
+        let table = Table::new(rows, cols)
+            .header(headers)
+            .row_highlight_style(Style::new().add_modifier(Modifier::REVERSED))
+            .block(Block::bordered().title("ms planner"));
+        f.render_stateful_widget(table, area, &mut app.table_state);
+
+        if let Some(i) = app.selected_task {
+            task::view(app, f, area, i);
+        }
+    }
+    fn task_to_row<'a>(task: &'a Task, config: &'a Config) -> Row<'a> {
+        let name: Text = task.name.clone().into();
+        let name = if config.filter.ids.contains(&task.id) {
+            name.fg(tailwind::ORANGE.c300)
+        } else {
+            name
+        };
+        let cells: [Text; HEADERS_LEN] = [
+            name,
+            task.bucket.clone().into(),
+            task.progress.as_text(),
+            task.priority.as_text(),
+            complete_items_text(task.items_completed),
+            task.create_date.to_string().into(),
+        ];
+        Row::new(cells)
+    }
+    fn complete_items_text<'a>(items: Option<(usize, usize)>) -> Text<'a> {
+        let text: Text = if let Some((completed, all)) = items {
+            let span_completed = if completed == all {
+                Span::from(completed.to_string()).light_green()
+            } else if completed == 0 {
+                Span::from(completed.to_string()).light_red()
+            } else {
+                Span::from(completed.to_string()).light_blue()
+            };
+            Line::from_iter([span_completed, format!("/{all}").into()]).into()
+        } else {
+            "".into()
+        };
+        text.alignment(Alignment::Center)
+    }
+}
 
 pub mod task {
     use ratatui::{
-        symbols,
         text::{Line, Span},
         widgets::List,
     };
