@@ -136,8 +136,9 @@ pub mod table {
 
 pub mod task {
     use ratatui::{
+        symbols,
         text::{Line, Span},
-        widgets::List,
+        widgets::{Borders, List},
     };
 
     use super::*;
@@ -150,7 +151,7 @@ pub mod task {
             .title("Task");
         let inner_area = block.inner(area);
         f.render_widget(block, area);
-        let rows_needed = std::cmp::max(task.assigned_to.len(), task.labels.len());
+        let rows_needed = std::cmp::max(task.assigned_to.len() + 4, task.labels.len() + 2);
         let [name_area, middle_area, description_area, items_area] = Layout::vertical([
             Constraint::Length(3),
             Constraint::Length(rows_needed as u16),
@@ -158,7 +159,7 @@ pub mod task {
             Constraint::Length(task.items.len() as u16 + 2),
         ])
         .areas(inner_area);
-        let [labels_area, assigned_area] =
+        let [labels_area, people_area] =
             Layout::horizontal([Constraint::Fill(2), Constraint::Fill(1)]).areas(middle_area);
         f.render_widget(
             Paragraph::new(task.name.clone())
@@ -166,8 +167,30 @@ pub mod task {
                 .wrap(Wrap::default()),
             name_area,
         );
-        f.render_widget(Text::from_iter(task.assigned_to.clone()), assigned_area);
-        f.render_widget(Text::from_iter(task.labels.clone()), labels_area);
+        let [assigned_area, created_area] =
+            Layout::vertical([Constraint::Fill(1), Constraint::Length(3)]).areas(people_area);
+        f.render_widget(
+            Paragraph::new(Text::from_iter(task.assigned_to.clone())).block(
+                Block::new()
+                    .borders(Borders::ALL ^ Borders::BOTTOM)
+                    .title("Assigned"),
+            ),
+            assigned_area,
+        );
+        let set = symbols::border::Set {
+            top_left: symbols::line::NORMAL.vertical,
+            top_right: symbols::line::VERTICAL,
+            ..symbols::border::PLAIN
+        };
+        let created_block = Block::bordered().title("Created").border_set(set);
+        let create_by =
+            Paragraph::new(Text::from(task.created_by.as_str()).yellow()).block(created_block);
+        f.render_widget(create_by, created_area);
+        f.render_widget(
+            Paragraph::new(Text::from_iter(task.labels.clone()))
+                .block(Block::bordered().title("Labels")),
+            labels_area,
+        );
         f.render_widget(
             Paragraph::new(task.description.clone())
                 .block(Block::bordered().title("description"))
