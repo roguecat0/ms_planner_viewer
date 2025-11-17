@@ -1,8 +1,6 @@
 use std::path::Path;
 
-use crate::{
-    AnyResult, Column, Priority, Progress,
-};
+use crate::{AnyResult, Column, Priority, Progress};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
@@ -10,6 +8,7 @@ use std::collections::HashSet;
 pub struct Config {
     pub filter: TaskFilter,
     pub sort: TaskSort,
+    pub scan_path: Option<std::path::PathBuf>,
 }
 impl Config {
     pub fn from_file(path: impl AsRef<Path>) -> AnyResult<Self> {

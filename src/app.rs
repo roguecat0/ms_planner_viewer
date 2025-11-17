@@ -1,6 +1,7 @@
 use crate::{
     AnyResult, CONFIG_PATH, Column, Plan, Priority, Progress, Task,
     config::{self, Config, Order, UniqueTaskKeys},
+    event::MsEvent,
     filter::{FilterType, SortType, UiColumn, UiTagFilter},
     ui,
 };
@@ -20,6 +21,7 @@ pub struct App {
     pub input_mode: InputMode,
     pub filter_view: FilterView,
     pub selected_task: Option<usize>,
+    pub event_rx: std::sync::mpsc::Receiver<MsEvent>,
 }
 pub struct FilterView {
     pub state: ListState,
@@ -48,6 +50,7 @@ impl App {
         };
         let mut app = App {
             plan,
+            event_rx: crate::event::setup(&config),
             config,
             displayed_tasks: vec![],
             error_popup: None,
@@ -66,7 +69,16 @@ impl App {
     pub fn run(mut self, mut terminal: DefaultTerminal) -> AnyResult<()> {
         loop {
             terminal.draw(|frame| ui::view(&mut self, frame))?;
-            if let Event::Key(key) = event::read()? {
+            let event = self.event_rx.recv()?;
+            let event = match event {
+                MsEvent::Crossterm(event) => event,
+                MsEvent::PlanMoved => {
+                    self.plan = Plan::from_path(crate::PLAN_PATH)?;
+                    self.add_error_msg("plan reloaded");
+                    continue;
+                }
+            };
+            if let Event::Key(key) = event? {
                 if let KeyCode::Char('q') = key.code {
                     break;
                 } else if self.error_popup.is_some() {

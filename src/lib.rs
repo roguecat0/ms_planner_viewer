@@ -1,9 +1,11 @@
 pub mod app;
 pub mod config;
+pub mod event;
 pub mod filter;
 pub mod lang;
 pub mod parse_xlsx;
 pub mod plan;
+pub mod scan_dir;
 pub mod ui;
 
 pub type AnyResult<T> = anyhow::Result<T>;
